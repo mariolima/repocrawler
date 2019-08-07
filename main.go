@@ -1,20 +1,24 @@
 package main
 
 import (
-  _"fmt"
+  "fmt"
   _"github.com/mariolima/repocrawl/bitbucket"
   _"github.com/mariolima/repocrawl/github_own"
-  _"github.com/bndr/gopencils"
-  "github.com/google/go-github/github"
-  "golang.org/x/oauth2" //retarded to use this just to inject a fucking header
+
+  _"github.com/bndr/gopencils" //bitbcuket api calls ? maybe just use go-bitbucket
+  "github.com/google/go-github/github" //multiple crawling methods need most of these functions
+  "golang.org/x/oauth2" //retarded to use this just to inject a fucking Auth header
   log "github.com/sirupsen/logrus"
   "context"
   "os"
 
+  "flag" //cli args
   "regexp"
   "bufio"
   "strings"
   _"strconv"
+
+  "github.com/logrusorgru/aurora" //colors - why this? because it is simple to replace text with colored text (others are not)
 )
 
 
@@ -56,6 +60,9 @@ func main() {
 	}
 	log.SetLevel(level)
 
+	query := *flag.String("ghq", "https://api.fastly.com", "GitHub Query to /search/code")
+	flag.Parse()
+
 	// Create New Api with our auth
 	//bitbucket
 	// api := gopencils.Api("https://api.bitbucket.org/2.0/")
@@ -64,8 +71,6 @@ func main() {
     //
 	// raw, _ := api.Res("repositories").Res("atlassian",resp).Get()
 	// fmt.Printf("%s",raw)
-
-
 
 	// raw, _ := api.Res("search").Res("atlassian",resp).Get()
 
@@ -82,7 +87,7 @@ func main() {
 	githubClient = setupGithubClient()
 
 	//-----
-	query := "fon.com garrafon"
+	// query := "hx.spiderfoot.net"
 	// fmt.Print("Enter GitHub code search query: ")
 	// fmt.Scanf("%s", &query)
 
@@ -99,17 +104,16 @@ func main() {
 	//fmt.Printf("Total:%d\nIncomplete Results:%v\n",*results.Total,*results.IncompleteResults)
 	log.WithFields(log.Fields{
 		"total": *results.Total,
-		"results": *results.IncompleteResults,
-	}).Info("Results")
+		"IncompleteResults": *results.IncompleteResults,
+	}).Debug("Results")
 
 	for _, result := range results.CodeResults {
 		log.WithFields(log.Fields{
 			"URL": *result.HTMLURL,
 			"Path":*result.Path,
 			"Description":result.Repository.GetDescription(),
-		}).Info("Result")
+		}).Debug("Result")
 		GithubCrawlResult(result)
-		log.Debug("Crawling Github file #TODO")
 	}
 }
 
@@ -121,13 +125,32 @@ func optionsMenu() {
 
 }
 
+type RegexMatch struct{
+
+}
+
+func HighlightWord(line string, word string) string {
+	return strings.ReplaceAll(line,word,fmt.Sprintf("%s",aurora.Green(word)))
+}
+
+func HighlightWords(line string, words []string) (res string) {
+	if words == nil {
+		return line
+	}
+	for _, word := range words {
+		res=strings.ReplaceAll(line,word,fmt.Sprintf("%s",aurora.Green(word)))
+	}
+	return res
+}
+
 func RegexLine(line string) (matches []string) {
 	//TODO import rules from cfg
 	// rules taken from https://github.com/dxa4481/truffleHogRegexes/blob/master/truffleHogRegexes/regexes.json :)
 	rules := map[string]string{
-		"secret":"(?i)(secret)",
-		"token":"(?i)(token)",
-		"password":"(?i)(password)",
+		// "secret":"(?i)(secret)\\W",
+		// "token":"(?i)(token)",
+		// "password":"(?i)(password)",
+
 		"jdbc":"(?i)(jdbc)",
 		"priv_keys":"(?s)(-----BEGIN (RSA|DSA|PGP|EC|) PRIVATE KEY.*END (RSA|DSA|PGP|EC|) PRIVATE KEY-----)",
 		"Slack Token": "(xox[p|b|o|a]-[0-9]{12}-[0-9]{12}-[0-9]{12}-[a-z0-9]{32})",
@@ -140,7 +163,7 @@ func RegexLine(line string) (matches []string) {
 		"AWS API Key": "AKIA[0-9A-Z]{16}",
 		"Facebook Access Token": "EAACEdEose0cBA[0-9A-Za-z]+",
 		"Facebook OAuth": "[f|F][a|A][c|C][e|E][b|B][o|O][o|O][k|K].*['|\"][0-9a-f]{32}['|\"]",
-		"GitHub": "[g|G][i|I][t|T][h|H][u|U][b|B].*['|\"][0-9a-zA-Z]{35,40}['|\"]",
+		// "GitHub": "[g|G][i|I][t|T][h|H][u|U][b|B].*['|\"][0-9a-zA-Z]{35,40}['|\"]", //giving me issues 
 		"Generic API Key": "[a|A][p|P][i|I][_]?[k|K][e|E][y|Y].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
 		"Generic Secret": "[s|S][e|E][c|C][r|R][e|E][t|T].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
 		"Google API Key": "AIza[0-9A-Za-z\\-_]{35}",
@@ -168,15 +191,38 @@ func RegexLine(line string) (matches []string) {
 		"Twilio API Key": "SK[0-9a-fA-F]{32}",
 		"Twitter Access Token": "[t|T][w|W][i|I][t|T][t|T][e|E][r|R].*[1-9][0-9]+-[0-9a-zA-Z]{40}",
 		"Twitter OAuth": "[t|T][w|W][i|I][t|T][t|T][e|E][r|R].*['|\"][0-9a-zA-Z]{35,44}['|\"]",
+		/*
+			MY RULES ^_^
+		*/
+		"Hardcoded Password": "(?i)(password).*[=:|\\s][\"']\\S+\\s", //Slightly better regex for passwords
+		"Fastly API Key": "\\W(Fastly-key)\\W*[A-Za-z0-9+=]{44,}\\W", //is it b64 tho?
+		"Disqus API Key": "\\W(?i)(disqus).+\\w[K|k][E|e][Y|y]\\W+[A-Za-z0-9]{64}\\W",
+		"Zoho Desk Token": "[0-9]{4}(.)[0-9a-f]{32}(.)[0-9a-f]{32}", //https://desk.zoho.com/DeskAPIDocument
+		// "Auth": "\\W(Authorization:).+\\W",
+		"Auth Bearer": "\\W(Authorization: Bearer).+[a-zA-z0-9]\\W",
+		"Random Key_sha1": "\\w*[K|k][E|e][Y|y]\\W*[0-9a-f]{40}\\W",
+		"Random Key_32": "\\w*[K|k][E|e][Y|y]\\W*[0-9a-f]{32}\\W",
+		"Random Token_32": "\\w*[T|t][O|o][K|k][E|e][N|n]\\W*[0-9a-f]{32}\\W",
+		"Random API Key": "\\S*[K|k][E|e][Y|y]+.*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+		"Meraki API Key": "[X|x]-[C|c][I|i][S|s][C|c][O|o]+-[M|m][E|e][R|r][A|a][K|k][I|i]+.*[0-9a-f]{40}",
 	}
 
 	for rule, regex := range rules {
 		// matched, err := regexp.Match(regex, []byte(line))
 		re := regexp.MustCompile(regex)
-		if(re.MatchString(line)) {
-			log.Warning("Found:",rule)
-			matches=append(matches,line)
+		ms := re.FindAllString(line,-1) //https://golang.org/pkg/regexp/#Regexp.FindAllString
+		if(len(ms)>0) {
+			result:=line
+			log.Debug("Found:",rule)
+			result=HighlightWords(line,ms)
+			matches=append(matches,result)
 		}
+
+		// if(re.MatchString(line)) {
+		// 	log.Warning("Found:",rule)
+		// 	matches=append(matches,line)
+		// }
+
 		// matches=append(matches, fmt.Sprintf("%v",re.FindAll([]byte(line), 0)))
 		// log.Warn(matches)
 
@@ -195,6 +241,7 @@ func RegexLine(line string) (matches []string) {
 func GithubCrawlResult(result github.CodeResult) { // https://godoc.org/github.com/google/go-github/github#CodeResult -- single file
 	// TODO make print Matches funct
 	for _, match := range result.TextMatches {
+		log.Debug("Got match FRAGMENT:",*match.Fragment)
 		for _, m := range match.Matches {
 			log.Trace("Got match:",*m.Text)
 			//TODO print matches
@@ -225,7 +272,11 @@ func GithubCrawlResult(result github.CodeResult) { // https://godoc.org/github.c
 		found := RegexLine(line)
 		// dumb
 		if len(found) > 0 {
-			log.Warning("Pattern found! ",found)
+			// log.WithFields(log.Fields{
+			// 	"url": *result.HTMLURL,
+			// 	"Pattern": found,
+			// }).Info("Pattern found")
+			log.Info(found," ",*result.HTMLURL)
 		}
 	}
 }

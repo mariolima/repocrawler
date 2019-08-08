@@ -2,10 +2,7 @@ package main
 
 import (
   "fmt"
-  _"github.com/mariolima/repocrawl/bitbucket"
-  _"github.com/mariolima/repocrawl/github_own"
 
-  _"github.com/bndr/gopencils" //bitbcuket api calls ? maybe just use go-bitbucket
   "github.com/google/go-github/github" //multiple crawling methods need most of these functions
   "golang.org/x/oauth2" //retarded to use this just to inject a fucking Auth header
   log "github.com/sirupsen/logrus"
@@ -16,7 +13,6 @@ import (
   "regexp"
   "bufio"
   "strings"
-  _"strconv"
 
   "github.com/logrusorgru/aurora" //colors - why this? because it is simple to replace text with colored text (others are not)
 )
@@ -194,7 +190,7 @@ func RegexLine(line string) (matches []string) {
 		/*
 			MY RULES ^_^
 		*/
-		"Hardcoded Password": "(?i)(password).*[=:|\\s][\"']\\S+\\s", //Slightly better regex for passwords
+		"Hardcoded Password": "(?i)(password).*[=:\\s][\"']\\S+\\s", //Slightly better regex for passwords
 		"Fastly API Key": "\\W(Fastly-key)\\W*[A-Za-z0-9+=]{44,}\\W", //is it b64 tho?
 		"Disqus API Key": "\\W(?i)(disqus).+\\w[K|k][E|e][Y|y]\\W+[A-Za-z0-9]{64}\\W",
 		"Zoho Desk Token": "[0-9]{4}(.)[0-9a-f]{32}(.)[0-9a-f]{32}", //https://desk.zoho.com/DeskAPIDocument
@@ -202,9 +198,10 @@ func RegexLine(line string) (matches []string) {
 		"Auth Bearer": "\\W(Authorization: Bearer).+[a-zA-z0-9]\\W",
 		"Random Key_sha1": "\\w*[K|k][E|e][Y|y]\\W*[0-9a-f]{40}\\W",
 		"Random Key_32": "\\w*[K|k][E|e][Y|y]\\W*[0-9a-f]{32}\\W",
+		"Random Key_b64": "\\S*[K|k][E|e][Y|y]+\\W*[A-Za-z0-9+=]{25,}\\W",
 		"Random Token_32": "\\w*[T|t][O|o][K|k][E|e][N|n]\\W*[0-9a-f]{32}\\W",
 		"Random API Key": "\\S*[K|k][E|e][Y|y]+.*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
-		"Meraki API Key": "[X|x]-[C|c][I|i][S|s][C|c][O|o]+-[M|m][E|e][R|r][A|a][K|k][I|i]+.*[0-9a-f]{40}",
+		"Meraki API Key": "[X|x]-[C|c][I|i][S|s][C|c][O|o]+-[M|m][E|e][R|r][A|a][K|k][I|i].+[:=]\\W+[0-9a-f]{40}\\W",
 	}
 
 	for rule, regex := range rules {

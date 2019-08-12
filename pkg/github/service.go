@@ -44,20 +44,26 @@ func (c *GitHubCrawler) getResultContent(result github.CodeResult) (string, erro
 	log.WithFields(log.Fields{
 		"*result.Repository.Name": *result.Repository.Name,
 		"*result.Repository.Login": *result.Repository.Owner.Login,
+		"*result.Path": *result.Path,
 	}).Debug("GetContents params")
 
 	repo_content, _, _, err := c.client.Repositories.GetContents(context.Background(), *result.Repository.Owner.Login, *result.Repository.Name, *result.Path, nil)
 	if err != nil {
-		log.Fatal("Error: %v\n", err)
+		log.Fatal("Error: ", err)
 		return "", err
 	}
+	log.WithFields(log.Fields{
+		"Size": *repo_content.Size,
+		"Name": *repo_content.Name,
+		"Path": *repo_content.Path,
+	}).Debug("Repo_content")
 	//https://github.com/google/go-github/blob/master/github/repos_contents.go#L23
 	file_content , err := repo_content.GetContent()
 	if err != nil {
 		log.Fatal("Error: %v\n", err)
 		return "", err
 	}
-	return file_content, err
+	return file_content, nil
 }
 
 func (c *GitHubCrawler) SearchCode(q string, resp chan entities.SearchResult){ //https://godoc.org/github.com/google/go-github/github#CodeResult
@@ -73,10 +79,11 @@ func (c *GitHubCrawler) SearchCode(q string, resp chan entities.SearchResult){ /
 
 	// results, err := GithubCodeSearch(query)
 	page:=1
+	log.Info("Going for page: ", page)
 	for{
 		results, _, err := c.client.Search.Code(context.Background(), q, &github.SearchOptions{
 			TextMatch: true,
-			ListOptions: github.ListOptions{ Page:page, PerPage:1000 },
+			ListOptions: github.ListOptions{ Page:page, PerPage:100 }, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
 		})
 
 		if err != nil {
@@ -88,14 +95,14 @@ func (c *GitHubCrawler) SearchCode(q string, resp chan entities.SearchResult){ /
 		log.WithFields(log.Fields{
 			"total": *results.Total,
 			"IncompleteResults": *results.IncompleteResults,
-		}).Debug("Results")
+		}).Debug("Results:")
 
 		for _, result := range results.CodeResults {
 			log.WithFields(log.Fields{
 				"URL": *result.HTMLURL,
 				"Path":*result.Path,
 				"Description":result.Repository.GetDescription(),
-			}).Debug("Result")
+			}).Debug("Result:")
 			// c.crawlResult(result, line_res)
 			file_content , err := c.getResultContent(result)
 			if err != nil {
@@ -115,9 +122,10 @@ func (c *GitHubCrawler) SearchCode(q string, resp chan entities.SearchResult){ /
 
 func (c *GitHubCrawler) formatRepo(repository *github.Repository) entities.Repository {
 	return entities.Repository{
-		GitURL: *repository.GitURL,
+		GitURL: *repository.HTMLURL,
+		Name: *repository.Name,
 		User: entities.User{
-			Name: *repository.Owner.Name,
+			Name: *repository.Owner.Login,
 		},
 	}
 }

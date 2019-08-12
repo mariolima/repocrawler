@@ -8,8 +8,10 @@ import (
   "os"
 
   "flag" //cli args
+  "github.com/pkg/profile"
 
   "github.com/mariolima/repocrawl/pkg/crawler"
+  "fmt"
 )
 
 
@@ -44,6 +46,9 @@ func setupGithubClient() *github.Client {
 }
 
 func main() {
+	//Debug
+	defer profile.Start().Stop()
+
 	GITHUB_ACCESS_TOKEN = getEnv("GITHUB_ACCESS_TOKEN","")
 	level , err := log.ParseLevel(getEnv("LOG_LEVEL","info"))
 	if err != nil {
@@ -51,55 +56,37 @@ func main() {
 	}
 	log.SetLevel(level)
 
-	query := *flag.String("ghq", "min-saude.pt", "GitHub Query to /search/code")
+	var query string
+	flag.StringVar(&query, "ghq", "min-saude.pt", "GitHub Query to /search/code")
 	flag.Parse()
 
 	log.WithFields(log.Fields{
 		"query": query,
-	}).Debug("Got Opts:")
+	}).Info("Got Opts:")
 
-	repoCrawler := crawler.NewRepoCrawler(crawler.CrawlerOpts{ GITHUB_ACCESS_TOKEN })
+	repoCrawler, _ := crawler.NewRepoCrawler(crawler.CrawlerOpts{
+		GithubToken: GITHUB_ACCESS_TOKEN,
+	})
+
+	//repoCrawl test
+	repoCrawler.DeepCrawl("https://github.com/ptgmiguel/orkos.git")
+	return 
 
 	matches := make(chan crawler.Match)
 	go repoCrawler.GithubCodeSearch(query, matches)
 	for{
 		select{
 		case match:=<-matches:
-			log.Warn(match.Rule)
+			if match.Rule.Type == "keys" {
+				coolPrint(match)
+				// log.Warn(match)
+			}
 		}
 	}
+}
 
-	// Create New Api with our auth
-	//bitbucket
-	// api := gopencils.Api("https://api.bitbucket.org/2.0/")
-    //
-	// resp := &bitbucket.Repositories{}
-    //
-	// raw, _ := api.Res("repositories").Res("atlassian",resp).Get()
-	// fmt.Printf("%s",raw)
-
-	// raw, _ := api.Res("search").Res("atlassian",resp).Get()
-
-	// Github Code Search
-	// api := gopencils.Api("https://api.github.com/")
-
-	// resp := &github.GithubCode{}
-	// querystring := map[string]string{"q": "kgg", "per_page": "1000"}
-	// api.Res("search").Res("users",resp).Get(querystring)
-	// fmt.Printf("%v",resp)
-	// fmt.Printf("%s",raw.Raw.Header)
-
-
-
-	//-----
-	// query := "hx.spiderfoot.net"
-	// fmt.Print("Enter GitHub code search query: ")
-	// fmt.Scanf("%s", &query)
-
-
-	// githubClient = setupGithubClient()
-    //
-    //
+func coolPrint(m crawler.Match) {
+	fmt.Printf("[MATCH %s] Line:\t%s\nLink:\t%s\nRepo:\tOwner:%s\tURL:%s\n",m.Rule.Regex,m.Line,m.URL,m.SearchResult.Repository.User.Name,m.SearchResult.Repository.GitURL)
 }
 
 func FetchOrganizations(username string) ([]*github.Organization, error) {

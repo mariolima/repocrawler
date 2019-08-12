@@ -161,7 +161,7 @@ func (c *crawler) compileRegexes() error {
 		},
 	}
 
-	//Retarded code - fix later
+	//Retarded code - fix later ?
 	c.MatchRules=map[string]map[string]*regexp.Regexp{}
 	for rule_type, regexes := range rules{
 		c.MatchRules[rule_type]=make(map[string]*regexp.Regexp)
@@ -188,23 +188,6 @@ func (c *crawler) RegexLine(line string) (matches []Match) {
 					Line: result,
 				})
 			}
-
-			// if(re.MatchString(line)) {
-			// 	log.Warning("Found:",rule)
-			// 	matches=append(matches,line)
-			// }
-
-			// matches=append(matches, fmt.Sprintf("%v",re.FindAll([]byte(line), 0)))
-			// log.Warn(matches)
-
-			// matches = re.FindAll([]byte(line), -1)
-			// if err != nil {
-			// 	log.Fatal("Error: %v\n", err)
-			// 	return false
-			// }
-			// if matched {
-			// 	return true
-			// }
 		}
 	}
 	return matches

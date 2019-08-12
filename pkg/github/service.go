@@ -1,13 +1,13 @@
 package github
 
 import(
-  "github.com/google/go-github/github" //multiple crawling methods need most of these functions
-  "golang.org/x/oauth2" //retarded to use this just to inject a fucking Auth header
+  "github.com/google/go-github/github"						//multiple crawling methods need most of these functions
+  "golang.org/x/oauth2"										//retarded to use this just to inject a fucking Auth header
   "context"
 
   log "github.com/sirupsen/logrus"
 
-  "github.com/mariolima/repocrawl/internal/entities" //structs common in GitHub/GitLab/BitBucket - RepoData/UserData etc
+  "github.com/mariolima/repocrawl/internal/entities"		//structs common in GitHub/GitLab/BitBucket - RepoData/UserData etc
 )
 
 type GitHubCrawler struct{

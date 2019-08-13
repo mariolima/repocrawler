@@ -5,6 +5,7 @@ import(
 	"github.com/mariolima/repocrawl/cmd/utils"
 
 	"gopkg.in/src-d/go-git.v4"								//It's def heavy but gets the job done - any alternatives for commit crawling?
+	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/storage/memory"
 
@@ -12,12 +13,14 @@ import(
 
 	"bufio"
 	"strings"
+
+	"fmt"													//rm later
 )
 
 
 /*
 	Crawls Git repository and retrieves matches with a given `channel` 
-	Head crawling only for now 
+	This code is trash - need to fix
 */
 func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 	r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
@@ -28,47 +31,97 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 		log.Fatal("Error: ", err)
 	}
 
-	// ... retrieves the branch pointed by HEAD
-	ref, err := r.Head()
-	if err != nil {
-		log.Fatal("Error: ", err)
-	}
-
 	// ... retrieves the commit history
-	cIter, err := r.Log(&git.LogOptions{From: ref.Hash()})
 
 	// ... just iterates over the commits, printing it
-	err = cIter.ForEach(func(commit *object.Commit) error {
-		parent, err:=commit.Parent(0)
-		if err==nil{
-			// log.Info(commit.Hash, ":",parent.Hash)
-			patch, _ :=commit.Patch(parent)
-			// files:=patch.FilePatches()[0].Files()
-			scanner := bufio.NewScanner(strings.NewReader(patch.String()))
-			for scanner.Scan() {
-				line := scanner.Text()
-				found := c.RegexLine(line)
-				// dumb
-				if len(found) > 0 {
-					// log.Debug("Found:",found)
+	refIter, err := r.Branches()
+	err = refIter.ForEach(func(cref *plumbing.Reference) error {
+		log.Info("Current Branch ",cref)
+		cIter, _ := r.Log(&git.LogOptions{From: cref.Hash()})
+		err = cIter.ForEach(func(commit *object.Commit) error {
+			log.Trace("Current commit ",commit)
+			parent, err:=commit.Parent(0)							//https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/object#Commit.Parent
+			if err==nil{
+				// stats, _ :=commit.Stats()
+				// log.Info(commit.Hash, ":",parent.Hash)
+				patch, _ :=commit.Patch(parent)						//https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#Patch
 
-					outp:=patch.String()
-					for _, match := range found{
-						// match.URL=result.FileURL
-						outp=utils.HighlightWord(outp, match.Value)
-						// match.SearchResult=result
-						respChan<-match
+				file_patches:=patch.FilePatches()
+				for _, p := range file_patches{						//https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#FilePatch
+					log.Trace("Going for patch ",p)
+					if p.IsBinary() {
+						log.Info("Found binary file, skipping")
+						continue									// might add this later with c.Opts
 					}
-					// log.Trace(outp) -- too much
+					from, to :=p.Files()
+					for _, chunk := range p.Chunks(){
+						scanner := bufio.NewScanner(strings.NewReader(chunk.Content()))
+						i:=1
+						for scanner.Scan() {
+							line := scanner.Text()
+							found := c.RegexLine(line)
+							// dumb
+							if len(found) > 0 {
+								outp:=chunk.Content()
+								for _, match := range found{
+									// match.URL=result.FileURL
+									outp=utils.HighlightWord(outp, match.Value)
+									// match.SearchResult=result
+									log.Debug("Commit:",commit.Hash)
+									log.Debug("From ",commit.Author, " ",commit.Message)
+									if from != nil {
+										match.URL=commitFileToUrl(giturl, commit.Hash.String(), from.Path(),i)
+										match.Line=match.Line
+									}else {
+										match.URL=commitFileToUrl(giturl, commit.Hash.String(), to.Path(),i)
+										match.Line=match.Line
+									}
+									// match.URL=fmt.Sprintf("%s/commit/%s",giturl,commit.Hash)
+									respChan<-match
+								}
+								log.Trace(outp)
+							}
+							i+=1
+						}
+					}
 				}
+
+				// /*
+				// 	Same as above but with diff contents output only 
+				// */
+				// scanner := bufio.NewScanner(strings.NewReader(patch.String()))
+				// for scanner.Scan() {
+				// 	line := scanner.Text()
+				// 	found := c.RegexLine(line)
+				// 	// dumb
+				// 	if len(found) > 0 {
+				// 		// log.Debug("Found:",found)
+				// 		outp:=patch.String()
+				// 		for _, match := range found{
+				// 			// match.URL=result.FileURL
+				// 			outp=utils.HighlightWord(outp, match.Value)
+				// 			// match.SearchResult=result
+				// 			respChan<-match
+				// 		}
+				// 		log.Trace(outp) //-- too much
+				// 	}
+				// }
+				// //log.Info(patch)
+
 			}
-			//log.Info(patch)
-		}
+			return nil
+		})
 		return nil
 	})
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
-	log.Info(giturl)
+	log.Info("Done with:",giturl)
 	return nil
+}
+
+func commitFileToUrl(giturl string, commitHash string, file string, line int) string {
+	// why blame? because certain files don't render cleartext (i.e. .md)
+	return fmt.Sprintf("%s/blame/%s/%s#L%d",giturl,commitHash,file,line)
+	// return fmt.Sprintf("%s/blob/%s/%s#L%d",giturl,commitHash,file,line)
 }

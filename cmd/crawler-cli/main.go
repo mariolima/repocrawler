@@ -47,26 +47,27 @@ func main() {
 	repoCrawler, _ := crawler.NewRepoCrawler(
 		crawler.CrawlerOpts{
 			GithubToken: GITHUB_ACCESS_TOKEN,
-		}
+		},
 	)
 
 	//repoCrawl test
 
 	matches := make(chan crawler.Match)
 
-	go repoCrawler.DeepCrawl("https://github.com/CiscoDevNet/alexaMeraki-guestwifi", matches)
+	go repoCrawler.DeepCrawl("https://github.com/SPMSTransparencia/ContadoresDinamicos", matches)
 	// go repoCrawler.GithubCodeSearch(query, matches)
 
 	for{
 		select{
 		case match:=<-matches:
-			coolPrint(match)
+			fmt.Println(match.Rule.Regex,"\t",match.Line,"\t",match.URL)
+			// coolPrint(match)
 		}
 	}
 }
 
 func coolPrint(m crawler.Match) {
-	fmt.Printf("[MATCH %s] Line:\t%s\nLink:\t%s\nRepo:\tOwner:%s\tURL:%s\n",m.Rule.Regex,m.Line,m.URL,m.SearchResult.Repository.User.Name,m.SearchResult.Repository.GitURL)
+	fmt.Printf("[MATCH %s] Line:%s\n[+] Link:%s\n[+] Owner:%s\n[+] URL:%s\n",m.Rule.Regex,m.Line,m.URL,m.SearchResult.Repository.User.Name,m.SearchResult.Repository.GitURL)
 }
 
 func FetchOrganizations(username string) ([]*github.Organization, error) {

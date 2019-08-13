@@ -97,6 +97,7 @@ func (c *crawler) compileRegexes() error {
 	rules := map[string]map[string]string{
 		"keywords":{
 			"secret":"(?i)(secret)\\W",
+			// "key":"(?i)(key)\\W",
 			// "token":"(?i)(token)",
 			// "password":"(?i)(password)",
 
@@ -118,16 +119,17 @@ func (c *crawler) compileRegexes() error {
 			"Generic API Key": "[a|A][p|P][i|I][_]?[k|K][e|E][y|Y].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
 			"Generic Secret": "[s|S][e|E][c|C][r|R][e|E][t|T].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
 			"Google API Key": "AIza[0-9A-Za-z\\-_]{35}",
-			"Google Cloud Platform API Key": "AIza[0-9A-Za-z\\-_]{35}",
-			"Google Cloud Platform OAuth": "[0-9]+-[0-9A-Za-z_]{32}\\.apps\\.googleusercontent\\.com",
-			"Google Drive API Key": "AIza[0-9A-Za-z\\-_]{35}",
-			"Google Drive OAuth": "[0-9]+-[0-9A-Za-z_]{32}\\.apps\\.googleusercontent\\.com",
-			"Google (GCP) Service-account": "\"type\": \"service_account\"",
-			"Google Gmail API Key": "AIza[0-9A-Za-z\\-_]{35}",
-			"Google Gmail OAuth": "[0-9]+-[0-9A-Za-z_]{32}\\.apps\\.googleusercontent\\.com",
-			"Google OAuth Access Token": "ya29\\.[0-9A-Za-z\\-_]+",
-			"Google YouTube API Key": "AIza[0-9A-Za-z\\-_]{35}",
-			"Google YouTube OAuth": "[0-9]+-[0-9A-Za-z_]{32}\\.apps\\.googleusercontent\\.com",
+			//TODO FIX - Google API Keys not working properly
+			// "Google Cloud Platform API Key": "AIza[0-9A-Za-z\\-_]{35}",
+			// "Google Cloud Platform OAuth": "[0-9]+-[0-9A-Za-z_]{32}\\.apps\\.googleusercontent\\.com",
+			// "Google Drive API Key": "AIza[0-9A-Za-z\\-_]{35}",
+			// "Google Drive OAuth": "[0-9]+-[0-9A-Za-z_]{32}\\.apps\\.googleusercontent\\.com",
+			// "Google (GCP) Service-account": "\"type\": \"service_account\"",
+			// "Google Gmail API Key": "AIza[0-9A-Za-z\\-_]{35}",
+			// "Google Gmail OAuth": "[0-9]+-[0-9A-Za-z_]{32}\\.apps\\.googleusercontent\\.com",
+			// "Google OAuth Access Token": "ya29\\.[0-9A-Za-z\\-_]+",
+			// "Google YouTube API Key": "AIza[0-9A-Za-z\\-_]{35}",
+			// "Google YouTube OAuth": "[0-9]+-[0-9A-Za-z_]{32}\\.apps\\.googleusercontent\\.com",
 			"Heroku API Key": "[h|H][e|E][r|R][o|O][k|K][u|U].*[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}",
 			"MailChimp API Key": "[0-9a-f]{32}-us[0-9]{1,2}",
 			"Mailgun API Key": "key-[0-9a-zA-Z]{32}",
@@ -145,17 +147,17 @@ func (c *crawler) compileRegexes() error {
 			/*
 				MY RULES ^_^
 			*/
-			// "Random Code": "[\"' ][0-9A-Za-z]{20,}[\"' ]",
-			"Hardcoded Password": "(?i)(password)\\W+[=:][\"']\\S+\\s", //Slightly better regex for passwords
+			"Generic Key/Secret": "\\S\\w+[Kk][Ee][Yy]\\s{0,1}[=:]\\s['\"].*['\"]",
+			"Hardcoded Password": "(?i)(password)\\s{0,1}[=:]+\\s['\"].*['\"]+\\s", //Slightly better regex for passwords
 			"Fastly API Key": "\\W(Fastly-key)\\W*[A-Za-z0-9+=]{44,}\\W", //is it b64 tho?
 			"Disqus API Key": "\\W(?i)(disqus).+\\w[K|k][E|e][Y|y]\\W+[A-Za-z0-9]{64}\\W",
 			"Zoho Desk Token": "[0-9]{4}[.]+[0-9a-f]{32}[.]+[0-9a-f]{32}", //https://desk.zoho.com/DeskAPIDocument
 			// "Auth": "\\W(Authorization:).+\\W",
 			"Auth Bearer": "(Authorization: Bearer )[a-zA-z0-9]{20,}\\S",
 			"Auth Basic": "(Basic )[a-zA-z0-9+=]{20,}\\S",
-			"Hash Token": "\\w*[T|t][O|o][K|k][E|e][N|n]\\W*([0-9a-f]{32}|[0-9a-f]{40}|[0-9a-f]{64})\\W", //md5, sha1, sha256
-			"Hash Key": "\\w*[K|k][E|e][Y|y]\\W*([0-9a-f]{32}|[0-9a-f]{40}|[0-9a-f]{64})\\W", //md5, sha1, sha256
-			"Random API Key": "\\S*[K|k][E|e][Y|y]+\\W+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+			"Generic Hash Token": "\\w+[TtOoKkEeNn]\\s{0,1}[=:]\\s{0,1}([0-9a-f]{32}|[0-9a-f]{40}|[0-9a-f]{56}|[0-9a-f]{64})\\W", //md5, sha1, sha224, sha256
+			"Generic Hash Key": "\\w+[KkEeYy]\\s{0,1}[=:]\\s{0,1}([0-9a-f]{32}|[0-9a-f]{40}|[0-9a-f]{56}|[0-9a-f]{64})\\W", //md5, sha1, sha224, sha256
+			"API Key": "\\S*[K|k][E|e][Y|y]+\\W+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
 			"Meraki API Key": "[X|x]-[C|c][I|i][S|s][C|c][O|o]+-[M|m][E|e][R|r][A|a][K|k][I|i].+[:=]\\W+[0-9a-f]{40}\\W",
 			"Trello API Key": "(?i)(trello_api_key).[=]+\\W[\"'][0-9a-f]{32}[\"']",
 		},
@@ -174,21 +176,29 @@ func (c *crawler) compileRegexes() error {
 }
 
 func (c *crawler) RegexLine(line string) (matches []Match) {
+	results := make(map[string]Match)										// map of matches in order to avoid duplicates with the same Rules
 	for rule_type, regexes := range c.MatchRules{
 		for rule, re := range regexes {
 			// matched, err := regexp.Match(regex, []byte(line))
 			ms := re.FindAllString(line,-1) //https://golang.org/pkg/regexp/#Regexp.FindAllString
 			if(len(ms)>0) {
 				result:=line
-				log.Debug("Found:",rule)
 				result=utils.HighlightWords(line,ms)
-				matches=append(matches,Match{
+				results[line]=Match{
 					Rule: MatchRule{ rule_type, rule },
 					Value: ms[0],
 					Line: result,
-				})
+				}
+				// matches=append(matches,Match{
+				// 	Rule: MatchRule{ rule_type, rule },
+				// 	Value: ms[0],
+				// 	Line: result,
+				// })
 			}
 		}
+	}
+	for _, m := range results{
+		matches=append(matches,m)
 	}
 	return matches
 }

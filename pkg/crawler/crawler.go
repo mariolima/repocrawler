@@ -14,9 +14,9 @@ import(
 )
 
 type crawler struct{
-	Github				*github.GitHubCrawler
-	MatchRules			map[string]map[string]*regexp.Regexp
-	Opts				CrawlerOpts
+	Github					*github.GitHubCrawler
+	MatchRules				map[string]map[string]*regexp.Regexp
+	Opts					CrawlerOpts
 }
 
 type CrawlerOpts struct{
@@ -146,7 +146,7 @@ func (c *crawler) compileRegexes() error {
 				MY RULES ^_^
 			*/
 			// "Random Code": "[\"' ][0-9A-Za-z]{20,}[\"' ]",
-			"Hardcoded Password": "(?i)(password).*[=:\\s][\"']\\S+\\s", //Slightly better regex for passwords
+			"Hardcoded Password": "(?i)(password)\\W+[=:][\"']\\S+\\s", //Slightly better regex for passwords
 			"Fastly API Key": "\\W(Fastly-key)\\W*[A-Za-z0-9+=]{44,}\\W", //is it b64 tho?
 			"Disqus API Key": "\\W(?i)(disqus).+\\w[K|k][E|e][Y|y]\\W+[A-Za-z0-9]{64}\\W",
 			"Zoho Desk Token": "[0-9]{4}[.]+[0-9a-f]{32}[.]+[0-9a-f]{32}", //https://desk.zoho.com/DeskAPIDocument

@@ -44,9 +44,11 @@ func main() {
 		"query": query,
 	}).Info("Got Opts:")
 
-	repoCrawler, _ := crawler.NewRepoCrawler(crawler.CrawlerOpts{
-		GithubToken: GITHUB_ACCESS_TOKEN,
-	})
+	repoCrawler, _ := crawler.NewRepoCrawler(
+		crawler.CrawlerOpts{
+			GithubToken: GITHUB_ACCESS_TOKEN,
+		}
+	)
 
 	//repoCrawl test
 

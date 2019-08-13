@@ -2,6 +2,7 @@ package crawler
 
 import(
 	_"github.com/mariolima/repocrawl/internal/entities"
+	"github.com/mariolima/repocrawl/cmd/utils"
 
 	"gopkg.in/src-d/go-git.v4"								//It's def heavy but gets the job done - any alternatives for commit crawling?
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
@@ -22,6 +23,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 	r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
 		URL: giturl,
 	})
+	log.Info(r)
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
@@ -49,11 +51,15 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 				// dumb
 				if len(found) > 0 {
 					// log.Debug("Found:",found)
+
+					outp:=patch.String()
 					for _, match := range found{
 						// match.URL=result.FileURL
+						outp=utils.HighlightWord(outp, match.Value)
 						// match.SearchResult=result
 						respChan<-match
 					}
+					// log.Trace(outp) -- too much
 				}
 			}
 			//log.Info(patch)

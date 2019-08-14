@@ -54,7 +54,8 @@ func main() {
 
 	matches := make(chan crawler.Match)
 
-	go repoCrawler.DeepCrawl("https://github.com/SPMSTransparencia/ContadoresDinamicos", matches)
+	// go repoCrawler.DeepCrawl("https://github.com/SPMSTransparencia/ContadoresDinamicos", matches)
+	go repoCrawler.DeepCrawlGithubUser("google", matches)
 	// go repoCrawler.GithubCodeSearch(query, matches)
 
 	for{

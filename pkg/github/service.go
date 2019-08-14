@@ -130,16 +130,32 @@ func (c *GitHubCrawler) formatRepo(repository *github.Repository) entities.Repos
 	}
 }
 
-func (c *GitHubCrawler) GetUsersRepositories(user string){
-	//TODO
+func (c *GitHubCrawler) GetUserRepositories(user string) (repos []entities.Repository, err error){
+	page:=1
+	for {
+		//TODO holy shit this code is bad
+		if page>10 {
+			return repos, nil
+		}
+		log.Debug("Getting User repos page ",page)
+		results, _, err := c.client.Search.Repositories(context.Background(), "user:"+user, &github.SearchOptions{
+				TextMatch: true,
+				ListOptions: github.ListOptions{ Page:page, PerPage:1000 }, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
+		})
+		if err != nil {
+			//TODO check error to see if Connection error or final page
+			log.Fatal("Error: ", err)
+			return repos, nil
+		}
+		for _, repo := range results.Repositories {
+			repos=append(repos,c.formatRepo(&repo))
+		}
+		page+=1
+	}
+	return repos, nil
 }
 
 func (c *GitHubCrawler) GetUsersOrganizations(user string){
-	//TODO
-}
-
-// Deepcrawl
-func (c *GitHubCrawler) DeepCrawlRepository(repository string){
 	//TODO
 }
 

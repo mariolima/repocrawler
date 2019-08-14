@@ -50,7 +50,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 				for _, p := range file_patches{						//https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#FilePatch
 					log.Trace("Going for patch ",p)
 					if p.IsBinary() {
-						log.Info("Found binary file, skipping")
+						log.Trace("Found binary file, skipping")
 						continue									// might add this later with c.Opts
 					}
 					from, to :=p.Files()
@@ -124,4 +124,13 @@ func commitFileToUrl(giturl string, commitHash string, file string, line int) st
 	// why blame? because certain files don't render cleartext (i.e. .md)
 	return fmt.Sprintf("%s/blame/%s/%s#L%d",giturl,commitHash,file,line)
 	// return fmt.Sprintf("%s/blob/%s/%s#L%d",giturl,commitHash,file,line)
+}
+
+func (c *crawler) DeepCrawlGithubUser(user string, respChan chan Match) {
+	repos, _ := c.Github.GetUserRepositories(user)
+	log.Info(fmt.Sprintf("Found %d repos on User %s",len(repos), user))
+	for _, repo := range repos {
+		log.Info("DeepCrawling repo ", repo.GitURL)
+		c.DeepCrawl(repo.GitURL,respChan)
+	}
 }

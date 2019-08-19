@@ -81,7 +81,7 @@ func (c *GitHubCrawler) SearchCode(q string, resp chan entities.SearchResult){ /
 	page:=1
 	log.Info("Going for page: ", page)
 	for{
-		results, _, err := c.client.Search.Code(context.Background(), q, &github.SearchOptions{
+		results, rsp, err := c.client.Search.Code(context.Background(), q, &github.SearchOptions{
 			TextMatch: true,
 			ListOptions: github.ListOptions{ Page:page, PerPage:100 }, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
 		})
@@ -116,7 +116,11 @@ func (c *GitHubCrawler) SearchCode(q string, resp chan entities.SearchResult){ /
 				FileContent: file_content,
 			}
 		}
-		page+=1
+		if rsp.NextPage == 0 {
+			break
+		}
+		page=rsp.NextPage
+		// page+=1
 	}
 }
 
@@ -130,29 +134,78 @@ func (c *GitHubCrawler) formatRepo(repository *github.Repository) entities.Repos
 	}
 }
 
+func (c *GitHubCrawler) formatContributor(contributor *github.Contributor) entities.User {
+	//For now
+	return entities.User{
+		Name:*contributor.Login,
+	}
+}
+
 func (c *GitHubCrawler) GetUserRepositories(user string) (repos []entities.Repository, err error){
-	page:=1
+	page:=0
+
+	// Using Search
+	// for {
+	// 	//TODO holy shit this code is bad
+	// 	log.Debug("Getting User repos page ",page)
+	// 	results, rsp, err := c.client.Search.Repositories(context.Background(), "user:"+user, &github.SearchOptions{
+	// 			TextMatch: true,
+	// 			ListOptions: github.ListOptions{ Page:page, PerPage:1000 }, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
+	// 	})
+	// 	if err != nil {
+	// 		//TODO check error to see if Connection error or final page
+	// 		log.Fatal("Error: ", err)
+	// 		return repos, nil
+	// 	}
+	// 	if rsp.NextPage == 0 {
+	// 		break
+	// 	}
+	// 	for _, repo := range results.Repositories {
+	// 		repos=append(repos,c.formatRepo(&repo))
+	// 	}
+	// 	page=rsp.NextPage
+	// 	// page+=1
+	// }
+
 	for {
-		//TODO holy shit this code is bad
-		if page>10 {
-			return repos, nil
-		}
 		log.Debug("Getting User repos page ",page)
-		results, _, err := c.client.Search.Repositories(context.Background(), "user:"+user, &github.SearchOptions{
-				TextMatch: true,
+		//https://godoc.org/github.com/google/go-github/github#RepositoryListOptions
+		results, rsp, err := c.client.Repositories.List(context.Background(), user, &github.RepositoryListOptions{
 				ListOptions: github.ListOptions{ Page:page, PerPage:1000 }, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
 		})
 		if err != nil {
-			//TODO check error to see if Connection error or final page
 			log.Fatal("Error: ", err)
 			return repos, nil
 		}
-		for _, repo := range results.Repositories {
-			repos=append(repos,c.formatRepo(&repo))
+		for _, repo := range results {
+			repos=append(repos,c.formatRepo(repo))
 		}
-		page+=1
+		if rsp.NextPage == 0 {
+			break
+		}
+		page=rsp.NextPage
+		// page+=1
 	}
+
 	return repos, nil
+}
+
+func (c *GitHubCrawler) GetRepoContributors(user, repo string) (users []entities.User, err error){
+	page:=1
+	// Get all commits
+	// commits, _, err := c.client.Repositories.ListCommits(context.Background(), user, repo, &github.CommitsListOptions{
+	// 		ListOptions: github.ListOptions{ Page:page, PerPage:1000 }, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
+	// })
+
+	//Github already has an API that lists all Contributors - https://developer.github.com/v3/repos/#list-contributors (no need to itereate commits)
+	//Contributors LISTED by Number of contributions
+	results, _, err := c.client.Repositories.ListContributors(context.Background(), user, repo, &github.ListContributorsOptions{
+			ListOptions: github.ListOptions{ Page:page, PerPage:1000 }, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
+	})
+	for _, user := range results{
+		users=append(users,c.formatContributor(user))
+	}
+	return users, err
 }
 
 func (c *GitHubCrawler) GetUsersOrganizations(user string){

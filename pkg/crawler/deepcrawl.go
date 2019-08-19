@@ -26,7 +26,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 	r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
 		URL: giturl,
 	})
-	log.Info(r)
+	// log.Trace(r)
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
@@ -86,9 +86,9 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 					}
 				}
 
-				// /*
-				// 	Same as above but with diff contents output only 
-				// */
+				// // /*
+				// // 	Same as above but with diff contents output only 
+				// // */
 				// scanner := bufio.NewScanner(strings.NewReader(patch.String()))
 				// for scanner.Scan() {
 				// 	line := scanner.Text()
@@ -124,6 +124,13 @@ func commitFileToUrl(giturl string, commitHash string, file string, line int) st
 	// why blame? because certain files don't render cleartext (i.e. .md)
 	return fmt.Sprintf("%s/blame/%s/%s#L%d",giturl,commitHash,file,line)
 	// return fmt.Sprintf("%s/blob/%s/%s#L%d",giturl,commitHash,file,line)
+}
+
+func (c *crawler) DeepCrawlGithubRepo(repo, user string, respChan chan Match) {
+	users, _ := c.Github.GetRepoContributors(repo, user)
+	for _, user := range users {
+		c.DeepCrawlGithubUser(user.Name, respChan)
+	}
 }
 
 func (c *crawler) DeepCrawlGithubUser(user string, respChan chan Match) {

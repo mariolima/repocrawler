@@ -33,6 +33,9 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 
 	// ... retrieves the commit history
 
+	// map to avoid repeated matches
+	// var matches = make(map[string]Match)
+
 	// ... just iterates over the commits, printing it
 	refIter, err := r.Branches()
 	err = refIter.ForEach(func(cref *plumbing.Reference) error {
@@ -78,6 +81,10 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 									}
 									// match.URL=fmt.Sprintf("%s/commit/%s",giturl,commit.Hash)
 									respChan<-match
+									// if _, ok := matches[line]; !ok {
+									// 	matches[line]=match
+									// 	respChan<-match
+									// }
 								}
 								log.Trace(outp)
 							}
@@ -122,8 +129,8 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 
 func commitFileToUrl(giturl string, commitHash string, file string, line int) string {
 	// why blame? because certain files don't render cleartext (i.e. .md)
-	return fmt.Sprintf("%s/blame/%s/%s#L%d",giturl,commitHash,file,line)
-	// return fmt.Sprintf("%s/blob/%s/%s#L%d",giturl,commitHash,file,line)
+	// return fmt.Sprintf("%s/blame/%s/%s#L%d",giturl,commitHash,file,line)
+	return fmt.Sprintf("%s/blob/%s/%s#L%d",giturl,commitHash,file,line)
 }
 
 func (c *crawler) DeepCrawlGithubRepo(repo, user string, respChan chan Match) {
@@ -131,6 +138,11 @@ func (c *crawler) DeepCrawlGithubRepo(repo, user string, respChan chan Match) {
 	for _, user := range users {
 		c.DeepCrawlGithubUser(user.Name, respChan)
 	}
+}
+
+//same API 
+func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
+	c.DeepCrawlGithubUser(org, respChan)
 }
 
 func (c *crawler) DeepCrawlGithubUser(user string, respChan chan Match) {

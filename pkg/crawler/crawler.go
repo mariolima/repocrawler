@@ -2,7 +2,7 @@ package crawler
 
 import(
 	"github.com/mariolima/repocrawl/pkg/github"
-	_"github.com/mariolima/repocrawl/pkg/bitbucket"
+	"github.com/mariolima/repocrawl/pkg/bitbucket"
 	_"github.com/mariolima/repocrawl/pkg/gitlab"
 	"github.com/mariolima/repocrawl/internal/entities"
 	"github.com/mariolima/repocrawl/cmd/utils"
@@ -15,6 +15,7 @@ import(
 
 type crawler struct{
 	Github					*github.GitHubCrawler
+	Bitbucket				*bitbucket.BitbucketCrawler
 	MatchRules				map[string]map[string]*regexp.Regexp
 	Opts					CrawlerOpts
 }
@@ -33,8 +34,10 @@ type Task struct{
 }
 
 func NewRepoCrawler(opts CrawlerOpts) (*crawler, error) {
+	//TODO depending on the opts - create only the required Clients
 	c:=crawler{
-		Github: github.NewGitHubCrawler(opts.GithubToken),
+		Github: github.NewCrawler(opts.GithubToken),
+		Bitbucket: bitbucket.NewCrawler("https://api.bitbucket.org/2.0","test","tesT"),
 		Opts: opts,
 	}
 	err := c.compileRegexes() //Pre compile regexes for better performance
@@ -96,7 +99,7 @@ func (c *crawler) compileRegexes() error {
 	// rules taken from https://github.com/dxa4481/truffleHogRegexes/blob/master/truffleHogRegexes/regexes.json :)
 	rules := map[string]map[string]string{
 		"keywords":{
-			"secret":"(?i)(secret)\\W",
+			// "secret":"(?i)(secret)\\W",
 			// "key":"(?i)(key)\\W",
 			// "token":"(?i)(token)",
 			// "password":"(?i)(password)",
@@ -159,7 +162,10 @@ func (c *crawler) compileRegexes() error {
 			"Generic Hash Key": "\\w+[KkEeYy]\\s{0,1}[=:]\\s{0,1}([0-9a-f]{32}|[0-9a-f]{40}|[0-9a-f]{56}|[0-9a-f]{64})\\W", //md5, sha1, sha224, sha256
 			"API Key": "\\S*[K|k][E|e][Y|y]+\\W+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
 			"Meraki API Key": "[X|x]-[C|c][I|i][S|s][C|c][O|o]+-[M|m][E|e][R|r][A|a][K|k][I|i].+[:=]\\W+[0-9a-f]{40}\\W",
-			"Trello API Key": "(?i)(trello_api_key).[=]+\\W[\"'][0-9a-f]{32}[\"']",
+			//TODO FIX these / prob caps
+			"Trello API Key": "(?i)['\"]{0,1}(trello_api_key)['\"]{0,1}\\s{0,1}[:=]\\s{0,1}['\"]{0,1}[0-9a-f]{32}['\"]{0,1}\\W",
+			"Algolia API Key": "(?i)['\"]{0,1}(x-algolia-api-key)['\"]{0,1}\\s{0,1}[:=]\\s{0,1}['\"]{0,1}[0-9a-f]{32}['\"]{0,1}\\W",
+			"Pendo Integration API Key": "(?i)['\"]{0,1}(x-pendo-integration-key)['\"]{0,1}\\s{0,1}[:=]\\s{0,1}['\"]{0,1}[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}['\"]{0,1}\\W",
 		},
 	}
 
@@ -187,7 +193,7 @@ func (c *crawler) RegexLine(line string) (matches []Match) {
 				results[line]=Match{
 					Rule: MatchRule{ rule_type, rule },
 					Value: ms[0],
-					Line: result,
+					Line: strings.TrimSpace(result),
 				}
 				// matches=append(matches,Match{
 				// 	Rule: MatchRule{ rule_type, rule },

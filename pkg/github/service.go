@@ -15,7 +15,7 @@ type GitHubCrawler struct{
 	client			*github.Client
 }
 
-func NewGitHubCrawler(api_key string) *GitHubCrawler {
+func NewCrawler(api_key string) *GitHubCrawler {
 	return &GitHubCrawler{api_key, setupClient(api_key)}
 }
 

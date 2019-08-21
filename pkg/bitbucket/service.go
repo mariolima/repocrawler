@@ -1,86 +1,218 @@
 package bitbucket
 
-type Repositories struct {
-	Next    string              `json:"next"`
-	Page    int64               `json:"page"`
-	Pagelen int64               `json:"pagelen"`
-	Size    int64               `json:"size"`
-	Values  []Repositories_sub8 `json:"values"`
+import(
+  "github.com/ktrysmt/go-bitbucket"
+
+  log "github.com/sirupsen/logrus"
+
+  _"github.com/mariolima/repocrawl/internal/entities"		//structs common in GitHub/GitLab/BitBucket - RepoData/UserData etc
+)
+
+type BitbucketCrawler struct{
+	username		string
+	password		string
+	client			*bitbucket.Client
 }
 
-type Repositories_sub3 struct {
-	Avatar       Repositories_sub1   `json:"avatar"`
-	Branches     Repositories_sub1   `json:"branches"`
-	Clone        []Repositories_sub2 `json:"clone"`
-	Commits      Repositories_sub1   `json:"commits"`
-	Downloads    Repositories_sub1   `json:"downloads"`
-	Forks        Repositories_sub1   `json:"forks"`
-	Hooks        Repositories_sub1   `json:"hooks"`
-	HTML         Repositories_sub1   `json:"html"`
-	Issues       Repositories_sub1   `json:"issues"`
-	Pullrequests Repositories_sub1   `json:"pullrequests"`
-	Self         Repositories_sub1   `json:"self"`
-	Source       Repositories_sub1   `json:"source"`
-	Tags         Repositories_sub1   `json:"tags"`
-	Watchers     Repositories_sub1   `json:"watchers"`
+func NewCrawler(baseAPI, username, password string) *BitbucketCrawler {
+	return &BitbucketCrawler{username, password, setupClient(baseAPI, username, password)}
 }
 
-type Repositories_sub5 struct {
-	Avatar Repositories_sub1 `json:"avatar"`
-	HTML   Repositories_sub1 `json:"html"`
-	Self   Repositories_sub1 `json:"self"`
+func setupClient(baseAPI, username, password string) *bitbucket.Client {
+	bitbucket.SetApiBaseURL(baseAPI)
+	client := bitbucket.NewBasicAuth(username, password)
+	log.Warn(client)
+	return client
 }
 
-type Repositories_sub8 struct {
-	CreatedOn   string            `json:"created_on"`
-	Description string            `json:"description"`
-	ForkPolicy  string            `json:"fork_policy"`
-	FullName    string            `json:"full_name"`
-	HasIssues   bool              `json:"has_issues"`
-	HasWiki     bool              `json:"has_wiki"`
-	IsPrivate   bool              `json:"is_private"`
-	Language    string            `json:"language"`
-	Links       Repositories_sub3 `json:"links"`
-	Mainbranch  Repositories_sub4 `json:"mainbranch"`
-	Name        string            `json:"name"`
-	Owner       Repositories_sub6 `json:"owner"`
-	Project     Repositories_sub7 `json:"project"`
-	Scm         string            `json:"scm"`
-	Size        int64             `json:"size"`
-	Slug        string            `json:"slug"`
-	Type        string            `json:"type"`
-	UpdatedOn   string            `json:"updated_on"`
-	UUID        string            `json:"uuid"`
-	Website     string            `json:"website"`
-}
-
-type Repositories_sub6 struct {
-	DisplayName string            `json:"display_name"`
-	Links       Repositories_sub5 `json:"links"`
-	Type        string            `json:"type"`
-	Username    string            `json:"username"`
-	UUID        string            `json:"uuid"`
-}
-
-type Repositories_sub2 struct {
-	Href string `json:"href"`
-	Name string `json:"name"`
-}
-
-type Repositories_sub1 struct {
-	Href string `json:"href"`
-}
-
-type Repositories_sub7 struct {
-	Key   string            `json:"key"`
-	Links Repositories_sub5 `json:"links"`
-	Name  string            `json:"name"`
-	Type  string            `json:"type"`
-	UUID  string            `json:"uuid"`
-}
-
-type Repositories_sub4 struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-}
-
+// func (c *GitHubCrawler) getResultContent(result github.CodeResult) (string, error){ // https://godoc.org/github.com/google/go-github/github#CodeResult -- single file
+// 	// TODO make print Matches funct
+// 	for _, match := range result.TextMatches {
+// 		log.Debug("Got match FRAGMENT:",*match.Fragment)
+// 		for _, m := range match.Matches {
+// 			log.Trace("Got match:",*m.Text)
+// 			//TODO print matches
+// 		}
+// 	}
+//
+// 	// https://godoc.org/github.com/google/go-github/github#RepositoriesService.GetContents
+// 	// TODO make getContents function
+// 	log.WithFields(log.Fields{
+// 		"*result.Repository.Name": *result.Repository.Name,
+// 		"*result.Repository.Login": *result.Repository.Owner.Login,
+// 		"*result.Path": *result.Path,
+// 	}).Debug("GetContents params")
+//
+// 	repo_content, _, _, err := c.client.Repositories.GetContents(context.Background(), *result.Repository.Owner.Login, *result.Repository.Name, *result.Path, nil)
+// 	if err != nil {
+// 		log.Fatal("Error: ", err)
+// 		return "", err
+// 	}
+// 	log.WithFields(log.Fields{
+// 		"Size": *repo_content.Size,
+// 		"Name": *repo_content.Name,
+// 		"Path": *repo_content.Path,
+// 	}).Debug("Repo_content")
+// 	//https://github.com/google/go-github/blob/master/github/repos_contents.go#L23
+// 	file_content , err := repo_content.GetContent()
+// 	if err != nil {
+// 		log.Fatal("Error: %v\n", err)
+// 		return "", err
+// 	}
+// 	return file_content, nil
+// }
+//
+// func (c *GitHubCrawler) SearchCode(q string, resp chan entities.SearchResult){ //https://godoc.org/github.com/google/go-github/github#CodeResult
+// 	//https://github.com/google/go-github/blob/master/github/repos_contents.go#L23
+// 	//-----
+// 	// query := "hx.spiderfoot.net"
+// 	// fmt.Print("Enter GitHub code search query: ")
+// 	// fmt.Scanf("%s", &query)
+//
+// 	log.WithFields(log.Fields{
+// 		"query": q,
+// 	}).Info("Query was made")
+//
+// 	// results, err := GithubCodeSearch(query)
+// 	page:=1
+// 	log.Info("Going for page: ", page)
+// 	for{
+// 		results, rsp, err := c.client.Search.Code(context.Background(), q, &github.SearchOptions{
+// 			TextMatch: true,
+// 			ListOptions: github.ListOptions{ Page:page, PerPage:100 }, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
+// 		})
+//
+// 		if err != nil {
+// 			log.Fatal("Error: ", err)
+// 			break
+// 		}
+//
+// 		//fmt.Printf("Total:%d\nIncomplete Results:%v\n",*results.Total,*results.IncompleteResults)
+// 		log.WithFields(log.Fields{
+// 			"total": *results.Total,
+// 			"IncompleteResults": *results.IncompleteResults,
+// 		}).Debug("Results:")
+//
+// 		for _, result := range results.CodeResults {
+// 			log.WithFields(log.Fields{
+// 				"URL": *result.HTMLURL,
+// 				"Path":*result.Path,
+// 				"Description":result.Repository.GetDescription(),
+// 			}).Debug("Result:")
+// 			// c.crawlResult(result, line_res)
+// 			file_content , err := c.getResultContent(result)
+// 			if err != nil {
+// 				log.Fatal("Error: ", err)
+// 				return
+// 			}
+//
+// 			resp <- entities.SearchResult{
+// 				Repository: c.formatRepo(result.GetRepository()),
+// 				FileURL: *result.HTMLURL,
+// 				FileContent: file_content,
+// 			}
+// 		}
+// 		if rsp.NextPage == 0 {
+// 			break
+// 		}
+// 		page=rsp.NextPage
+// 		// page+=1
+// 	}
+// }
+//
+// func (c *GitHubCrawler) formatRepo(repository *github.Repository) entities.Repository {
+// 	return entities.Repository{
+// 		GitURL: *repository.HTMLURL,
+// 		Name: *repository.Name,
+// 		User: entities.User{
+// 			Name: *repository.Owner.Login,
+// 		},
+// 	}
+// }
+//
+// func (c *GitHubCrawler) formatContributor(contributor *github.Contributor) entities.User {
+// 	//For now
+// 	return entities.User{
+// 		Name:*contributor.Login,
+// 	}
+// }
+//
+// func (c *GitHubCrawler) GetUserRepositories(user string) (repos []entities.Repository, err error){
+// 	page:=0
+//
+// 	// Using Search
+// 	// for {
+// 	// 	//TODO holy shit this code is bad
+// 	// 	log.Debug("Getting User repos page ",page)
+// 	// 	results, rsp, err := c.client.Search.Repositories(context.Background(), "user:"+user, &github.SearchOptions{
+// 	// 			TextMatch: true,
+// 	// 			ListOptions: github.ListOptions{ Page:page, PerPage:1000 }, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
+// 	// 	})
+// 	// 	if err != nil {
+// 	// 		//TODO check error to see if Connection error or final page
+// 	// 		log.Fatal("Error: ", err)
+// 	// 		return repos, nil
+// 	// 	}
+// 	// 	if rsp.NextPage == 0 {
+// 	// 		break
+// 	// 	}
+// 	// 	for _, repo := range results.Repositories {
+// 	// 		repos=append(repos,c.formatRepo(&repo))
+// 	// 	}
+// 	// 	page=rsp.NextPage
+// 	// 	// page+=1
+// 	// }
+//
+// 	for {
+// 		log.Debug("Getting User repos page ",page)
+// 		//https://godoc.org/github.com/google/go-github/github#RepositoryListOptions
+// 		results, rsp, err := c.client.Repositories.List(context.Background(), user, &github.RepositoryListOptions{
+// 				ListOptions: github.ListOptions{ Page:page, PerPage:1000 }, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
+// 		})
+// 		if err != nil {
+// 			log.Fatal("Error: ", err)
+// 			return repos, nil
+// 		}
+// 		for _, repo := range results {
+// 			repos=append(repos,c.formatRepo(repo))
+// 		}
+// 		if rsp.NextPage == 0 {
+// 			break
+// 		}
+// 		page=rsp.NextPage
+// 		// page+=1
+// 	}
+//
+// 	return repos, nil
+// }
+//
+// func (c *GitHubCrawler) GetRepoContributors(user, repo string) (users []entities.User, err error){
+// 	page:=1
+// 	// Get all commits
+// 	// commits, _, err := c.client.Repositories.ListCommits(context.Background(), user, repo, &github.CommitsListOptions{
+// 	// 		ListOptions: github.ListOptions{ Page:page, PerPage:1000 }, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
+// 	// })
+//
+// 	//Github already has an API that lists all Contributors - https://developer.github.com/v3/repos/#list-contributors (no need to itereate commits)
+// 	//Contributors LISTED by Number of contributions
+// 	results, _, err := c.client.Repositories.ListContributors(context.Background(), user, repo, &github.ListContributorsOptions{
+// 			ListOptions: github.ListOptions{ Page:page, PerPage:1000 }, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
+// 	})
+// 	for _, user := range results{
+// 		users=append(users,c.formatContributor(user))
+// 	}
+// 	return users, err
+// }
+//
+// func (c *GitHubCrawler) GetUsersOrganizations(user string){
+// 	//TODO
+// }
+//
+// func (c *GitHubCrawler) DeepCrawlUser(user string){
+// 	//TODO
+// }
+//
+// func (c *GitHubCrawler) DeepCrawlOrganization(organization string){
+// 	//TODO
+// }
+//

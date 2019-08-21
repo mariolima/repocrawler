@@ -55,21 +55,17 @@ func main() {
 	matches := make(chan crawler.Match)
 
 	// go repoCrawler.DeepCrawl("https://github.com/octocat/Hello-World", matches)
-	go repoCrawler.DeepCrawlGithubRepo("octocat", "Hello-World", matches)
+	// go repoCrawler.DeepCrawlGithubRepo("octocat", "Hello-World", matches)
+	// go repoCrawler.DeepCrawlGithubUser("TwilioDevEd",matches)
 
-	// go repoCrawler.GithubCodeSearch(query, matches)
+	go repoCrawler.GithubCodeSearch(query, matches)
 
 	for{
 		select{
 		case match:=<-matches:
-			fmt.Println(match.Rule.Regex,"\t",match.Line,"\t",match.URL)
-			// coolPrint(match)
+			fmt.Printf("%-30s %-90s %s\n",match.Rule.Regex,match.Line,match.URL)
 		}
 	}
-}
-
-func coolPrint(m crawler.Match) {
-	fmt.Printf("[MATCH %s] Line:%s\n[+] Link:%s\n[+] Owner:%s\n[+] URL:%s\n",m.Rule.Regex,m.Line,m.URL,m.SearchResult.Repository.User.Name,m.SearchResult.Repository.GitURL)
 }
 
 func FetchOrganizations(username string) ([]*github.Organization, error) {

@@ -56,9 +56,9 @@ func main() {
 
 	// go repoCrawler.DeepCrawl("https://github.com/octocat/Hello-World", matches)
 	// go repoCrawler.DeepCrawlGithubRepo("octocat", "Hello-World", matches)
-	// go repoCrawler.DeepCrawlGithubUser("TwilioDevEd",matches)
+	go repoCrawler.DeepCrawlGithubUser("TwilioDevEd",matches)
 
-	go repoCrawler.GithubCodeSearch(query, matches)
+	// go repoCrawler.GithubCodeSearch(query, matches)
 
 	for{
 		select{

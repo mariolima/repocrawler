@@ -11,6 +11,8 @@ import(
 	"regexp"
 	"bufio"
 	"strings"
+
+	"fmt" //TODO used just to format github lines #L01
 )
 
 type crawler struct{
@@ -75,6 +77,7 @@ func (c *crawler) GithubCodeSearch(query string, response chan Match) {
 		case result:=<-searchResultChan:
 			log.Trace("Result received:",result)
 			scanner := bufio.NewScanner(strings.NewReader(result.FileContent))
+			i:=1
 			for scanner.Scan() {
 				line := scanner.Text()
 				found := c.RegexLine(line)
@@ -82,11 +85,13 @@ func (c *crawler) GithubCodeSearch(query string, response chan Match) {
 				if len(found) > 0 {
 					log.Debug("Found:",found)
 					for _, match := range found{
-						match.URL=result.FileURL
+						match.URL=fmt.Sprintf("%s#L%d",result.FileURL,i)
+						// match.URL=result.FileURL
 						match.SearchResult=result
 						response<-match
 					}
 				}
+				i+=1
 			}
 		}
 	}

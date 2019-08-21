@@ -34,7 +34,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 	// ... retrieves the commit history
 
 	// map to avoid repeated matches
-	// var matches = make(map[string]Match)
+	var matches = make(map[string]Match)
 
 	// ... just iterates over the commits, printing it
 	refIter, err := r.Branches()
@@ -80,11 +80,10 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 										match.Line=match.Line
 									}
 									// match.URL=fmt.Sprintf("%s/commit/%s",giturl,commit.Hash)
-									respChan<-match
-									// if _, ok := matches[line]; !ok {
-									// 	matches[line]=match
-									// 	respChan<-match
-									// }
+									if _, ok := matches[line]; !ok {
+										matches[line]=match
+										respChan<-match
+									}
 								}
 								log.Trace(outp)
 							}

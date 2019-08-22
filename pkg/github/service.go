@@ -178,7 +178,9 @@ func (c *GitHubCrawler) GetUserRepositories(user string) (repos []entities.Repos
 			return repos, nil
 		}
 		for _, repo := range results {
-			repos=append(repos,c.formatRepo(repo))
+			if !*repo.Fork { //TODO c.Opt to Ignore/Not forks
+				repos=append(repos,c.formatRepo(repo))
+			}
 		}
 		if rsp.NextPage == 0 {
 			break

@@ -132,8 +132,9 @@ func commitFileToUrl(giturl string, commitHash string, file string, line int) st
 	return fmt.Sprintf("%s/blob/%s/%s#L%d",giturl,commitHash,file,line)
 }
 
-func (c *crawler) DeepCrawlGithubRepo(repo, user string, respChan chan Match) {
-	users, _ := c.Github.GetRepoContributors(repo, user)
+func (c *crawler) DeepCrawlGithubRepo(user, repo string, respChan chan Match) {
+	users, _ := c.Github.GetRepoContributors(user, repo)
+	log.Info("Found ",len(users), " users for repo ", repo)
 	for _, user := range users {
 		c.DeepCrawlGithubUser(user.Name, respChan)
 	}

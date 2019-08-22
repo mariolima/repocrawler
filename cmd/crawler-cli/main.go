@@ -55,8 +55,9 @@ func main() {
 	matches := make(chan crawler.Match)
 
 	// go repoCrawler.DeepCrawl("https://github.com/octocat/Hello-World", matches)
-	// go repoCrawler.DeepCrawlGithubRepo("octocat", "Hello-World", matches)
-	go repoCrawler.DeepCrawlGithubUser("TwilioDevEd",matches)
+	go repoCrawler.DeepCrawlGithubRepo("", "", matches)
+	// go repoCrawler.DeepCrawlGithubOrg("TwilioDevEd",matches)
+	// go repoCrawler.DeepCrawlGithubUser("",matches)
 
 	// go repoCrawler.GithubCodeSearch(query, matches)
 

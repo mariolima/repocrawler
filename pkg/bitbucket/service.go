@@ -1,28 +1,71 @@
 package bitbucket
 
 import(
-  "github.com/ktrysmt/go-bitbucket"
-
   log "github.com/sirupsen/logrus"
 
-  _"github.com/mariolima/repocrawl/internal/entities"		//structs common in GitHub/GitLab/BitBucket - RepoData/UserData etc
+  "github.com/mariolima/repocrawl/internal/entities"		//structs common in GitHub/GitLab/BitBucket - RepoData/UserData etc
+
+  "github.com/bndr/gopencils"
+
+  "strings"													// for the pagination parsing
 )
 
 type BitbucketCrawler struct{
+	baseAPI			string
 	username		string
 	password		string
-	client			*bitbucket.Client
+	// client			*gopencils.Api
 }
 
 func NewCrawler(baseAPI, username, password string) *BitbucketCrawler {
-	return &BitbucketCrawler{username, password, setupClient(baseAPI, username, password)}
+	return &BitbucketCrawler{baseAPI, username, password}
 }
 
-func setupClient(baseAPI, username, password string) *bitbucket.Client {
-	bitbucket.SetApiBaseURL(baseAPI)
-	client := bitbucket.NewBasicAuth(username, password)
-	log.Warn(client)
-	return client
+// func setupClient(baseAPI, username, password string) *bitbucket.Client {
+// 	bitbucket.SetApiBaseURL(baseAPI)
+// 	client := bitbucket.NewBasicAuth(username, password)
+// 	log.Warn(client)
+// 	return client
+// }
+
+func (c *BitbucketCrawler) GetUserRepositories(user string) (repos []entities.Repository, err error){
+	// auth := gopencils.BasicAuth{"username", "password"}
+	api := gopencils.Api("https://api.bitbucket.org/2.0")
+
+	page:="1"
+	for{
+		repositories := &RepositoriesResponse{}
+		resource, err := api.Res("repositories").Res("atlassian", repositories).Get(map[string]string{"pagelen": "100","page":page})
+		log.Trace("GetUserRepositories resource resp: ",resource)
+		if err != nil{
+			log.Fatal("Error: %v\n", err)
+			return repos, err
+		}
+		log.Info("GetUserRepositories: got ",repositories.Size," total repos for user ",user)
+		for _, repo := range repositories.Values {
+			log.Debug(repo.Links.Clone[0].Href)
+			repos=append(repos,c.formatRepo(&repo))
+		}
+		log.Debug(repositories.Next)
+
+		//TODO fix this CODE - its REALLY shit
+		if next := repositories.Next; next != "" {
+			page=strings.Split(next, "=")[2]
+		}else{
+			break
+		}
+	}
+	return repos, nil
+}
+
+func (c *BitbucketCrawler) formatRepo(repository *Repository) entities.Repository {
+	return entities.Repository{
+		GitURL: repository.Links.Clone[0].Href,
+		Name: repository.Name,
+		User: entities.User{
+			Name: repository.Owner.Username,
+		},
+	}
 }
 
 // func (c *GitHubCrawler) getResultContent(result github.CodeResult) (string, error){ // https://godoc.org/github.com/google/go-github/github#CodeResult -- single file
@@ -120,15 +163,6 @@ func setupClient(baseAPI, username, password string) *bitbucket.Client {
 // 	}
 // }
 //
-// func (c *GitHubCrawler) formatRepo(repository *github.Repository) entities.Repository {
-// 	return entities.Repository{
-// 		GitURL: *repository.HTMLURL,
-// 		Name: *repository.Name,
-// 		User: entities.User{
-// 			Name: *repository.Owner.Login,
-// 		},
-// 	}
-// }
 //
 // func (c *GitHubCrawler) formatContributor(contributor *github.Contributor) entities.User {
 // 	//For now

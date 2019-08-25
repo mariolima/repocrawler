@@ -43,7 +43,7 @@ type Repository struct {
 	Links       RepositoryApiLinks				`json:"links"`
 	Mainbranch  RepositoryBranch				`json:"mainbranch"`
 	Name        string							`json:"name"`
-	Owner       RepositoryUser					`json:"owner"`
+	Owner       User							`json:"owner"`
 	Project     RepositoryProject				`json:"project"`
 	Scm         string							`json:"scm"`
 	Size        int64							`json:"size"`
@@ -54,10 +54,12 @@ type Repository struct {
 	Website     string							`json:"website"`
 }
 
-type RepositoryUser struct {
+type User struct {
+	AccountID   string							`json:"account_id"`
 	DisplayName string							`json:"display_name"`
 	Links       UserApiLinks					`json:"links"`
 	Type        string							`json:"type"`
+	Nickname    string							`json:"nickname"`
 	Username    string							`json:"username"`
 	UUID        string							`json:"uuid"`
 }

@@ -79,6 +79,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 										match.URL=commitFileToUrl(giturl, commit.Hash.String(), to.Path(),i)
 										match.Line=match.Line
 									}
+									match.LineNr=i
 									// match.URL=fmt.Sprintf("%s/commit/%s",giturl,commit.Hash)
 									if _, ok := matches[line]; !ok {
 										matches[line]=match
@@ -143,6 +144,23 @@ func (c *crawler) DeepCrawlGithubRepo(user, repo string, respChan chan Match) {
 //same API 
 func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 	c.DeepCrawlGithubUser(org, respChan)
+}
+
+func (c *crawler) DeepCrawlBitbucketUser(user string, respChan chan Match) {
+	repos, _ := c.Bitbucket.GetUserRepositories(user)
+	log.Info(fmt.Sprintf("Found %d repos on User %s",len(repos), user))
+
+	maxGoroutines := 3
+    guard := make(chan struct{}, maxGoroutines)
+
+	for _, repo := range repos {
+		guard <- struct{}{}
+		go func(repoUrl string,respChan chan Match) {
+			log.Info("DeepCrawling repo ", repoUrl)
+			c.DeepCrawl(repoUrl,respChan)
+			<-guard
+		}(repo.GitURL,respChan)
+	}
 }
 
 func (c *crawler) DeepCrawlGithubUser(user string, respChan chan Match) {

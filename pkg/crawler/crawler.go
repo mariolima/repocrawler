@@ -54,6 +54,7 @@ func NewRepoCrawler(opts CrawlerOpts) (*crawler, error) {
 type Match struct { //Has to be generic - TODO move to other pkg
 	Rule			MatchRule
 	Line			string
+	LineNr			int
 	Value			string
 	//Repository struct // User struct and other generic stuff
 	URL				string
@@ -88,6 +89,7 @@ func (c *crawler) GithubCodeSearch(query string, response chan Match) {
 						match.URL=fmt.Sprintf("%s#L%d",result.FileURL,i)
 						// match.URL=result.FileURL
 						match.SearchResult=result
+						match.LineNr=i
 						response<-match
 					}
 				}

@@ -43,8 +43,11 @@ func (c *BitbucketCrawler) GetUserRepositories(user string) (repos []entities.Re
 		}
 		log.Info("GetUserRepositories: got ",repositories.Size," total repos for user ",user)
 		for _, repo := range repositories.Values {
-			log.Debug(repo.Links.Clone[0].Href)
-			repos=append(repos,c.formatRepo(&repo))
+			// Repo has to be Public and Git TODO add Mercurial support
+			if !repo.IsPrivate && strings.HasSuffix(repo.Links.Clone[0].Href, ".git"){
+				log.Debug(repo.Links.Clone[0].Href)
+				repos=append(repos,c.formatRepo(&repo))
+			}
 		}
 		log.Debug(repositories.Next)
 
@@ -55,8 +58,50 @@ func (c *BitbucketCrawler) GetUserRepositories(user string) (repos []entities.Re
 			break
 		}
 	}
-	return repos, nil
+	return repos, err
 }
+
+func (c *BitbucketCrawler) GetRepoContributors(user, repo string) (users []entities.User, err error){
+	api := gopencils.Api("https://api.bitbucket.org/2.0")
+	page:="1"
+	users_map:=make(map[string]User)
+	for{
+		commits := &CommitsResponse{}
+		resource, err := api.Res("repositories").Res(user).Res(repo).Res("commits",commits).Get(map[string]string{"pagelen": "100","page":page})
+		log.Trace("GetRepoContributors resource resp: ",resource)
+		if err != nil{
+			log.Fatal("Error: %v\n", err)
+			return users, err
+		}
+
+		for _, commit := range commits.Values {
+			users_map[commit.Author.User.UUID]=commit.Author.User
+		}
+		log.Trace(commits.Next)
+
+		//TODO fix this CODE - its REALLY shit
+		if next := commits.Next; next != "" {
+			page=strings.Split(next, "=")[2]
+		}else{
+			break
+		}
+	}
+	log.Info("GetRepoContributors ",len(users_map), " users found for repo ",repo)
+	for _, user := range users_map{
+		users=append(users, c.formatContributor(&user))
+	}
+	return users, err
+}
+
+
+func (c *BitbucketCrawler) formatContributor(contributor *User) entities.User {
+	//For now
+	return entities.User{
+		Name:contributor.Nickname,
+		UUID:contributor.UUID,
+	}
+}
+
 
 func (c *BitbucketCrawler) formatRepo(repository *Repository) entities.Repository {
 	return entities.Repository{
@@ -64,6 +109,7 @@ func (c *BitbucketCrawler) formatRepo(repository *Repository) entities.Repositor
 		Name: repository.Name,
 		User: entities.User{
 			Name: repository.Owner.Username,
+			UUID: repository.Owner.UUID,
 		},
 	}
 }

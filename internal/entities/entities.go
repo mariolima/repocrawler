@@ -17,6 +17,7 @@ type Repository struct{
 
 type User struct{
 	Name				string
+	UUID				string
 }
 
 type SearchResult struct{

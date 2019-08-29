@@ -86,7 +86,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 										respChan<-match
 									}
 								}
-								log.Trace(outp)
+								// log.Trace(outp)
 							}
 							i+=1
 						}
@@ -141,6 +141,15 @@ func (c *crawler) DeepCrawlGithubRepo(user, repo string, respChan chan Match) {
 	}
 }
 
+func (c *crawler) DeepCrawlBitbucketRepo(user, repo string, respChan chan Match) {
+	users, _ := c.Bitbucket.GetRepoContributors(user, repo)
+	log.Info("Found ",len(users), " users for repo ", repo)
+	for _, user := range users {
+		log.Trace(user.UUID)
+		c.DeepCrawlBitbucketUser(user.UUID, respChan)
+	}
+}
+
 //same API 
 func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 	c.DeepCrawlGithubUser(org, respChan)
@@ -149,18 +158,22 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 func (c *crawler) DeepCrawlBitbucketUser(user string, respChan chan Match) {
 	repos, _ := c.Bitbucket.GetUserRepositories(user)
 	log.Info(fmt.Sprintf("Found %d repos on User %s",len(repos), user))
-
-	maxGoroutines := 3
-    guard := make(chan struct{}, maxGoroutines)
-
 	for _, repo := range repos {
-		guard <- struct{}{}
-		go func(repoUrl string,respChan chan Match) {
-			log.Info("DeepCrawling repo ", repoUrl)
-			c.DeepCrawl(repoUrl,respChan)
-			<-guard
-		}(repo.GitURL,respChan)
+		log.Info("DeepCrawling repo ", repo.GitURL)
+		c.DeepCrawl(repo.GitURL,respChan)
 	}
+
+	// maxGoroutines := 3
+    // guard := make(chan struct{}, maxGoroutines)
+    //
+	// for _, repo := range repos {
+	// 	guard <- struct{}{}
+	// 	go func(repoUrl string,respChan chan Match) {
+	// 		log.Info("DeepCrawling repo ", repoUrl)
+	// 		c.DeepCrawl(repoUrl,respChan)
+	// 		<-guard
+	// 	}(repo.GitURL,respChan)
+	// }
 }
 
 func (c *crawler) DeepCrawlGithubUser(user string, respChan chan Match) {

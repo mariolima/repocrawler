@@ -12,11 +12,11 @@ func HighlightWords(line string, words []string) (res string) {
 		return line
 	}
 	for _, word := range words {
-		res=strings.ReplaceAll(line,word,fmt.Sprintf("%s",aurora.Green(word)))
+		res=strings.ReplaceAll(line,word,fmt.Sprintf("%s",aurora.Red(word)))
 	}
 	return res
 }
 
 func HighlightWord(line string, word string) string {
-	return strings.ReplaceAll(line,word,fmt.Sprintf("%s",aurora.Green(word)))
+	return strings.ReplaceAll(line,word,fmt.Sprintf("%s",aurora.Red(word)))
 }

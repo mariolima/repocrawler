@@ -204,6 +204,10 @@ func (c *GitHubCrawler) GetRepoContributors(user, repo string) (users []entities
 	results, _, err := c.client.Repositories.ListContributors(context.Background(), user, repo, &github.ListContributorsOptions{
 			ListOptions: github.ListOptions{ Page:page, PerPage:1000 }, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
 	})
+	if err != nil {
+		log.Fatal("Error: ", err)
+		return users, err
+	}
 	for _, user := range results{
 		users=append(users,c.formatContributor(user))
 	}

@@ -35,7 +35,7 @@ func (c *BitbucketCrawler) GetUserRepositories(user string) (repos []entities.Re
 	page:="1"
 	for{
 		repositories := &RepositoriesResponse{}
-		resource, err := api.Res("repositories").Res("atlassian", repositories).Get(map[string]string{"pagelen": "100","page":page})
+		resource, err := api.Res("repositories").Res(user, repositories).Get(map[string]string{"pagelen": "100","page":page})
 		log.Trace("GetUserRepositories resource resp: ",resource)
 		if err != nil{
 			log.Fatal("Error: %v\n", err)

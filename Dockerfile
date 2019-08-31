@@ -6,8 +6,6 @@ LABEL maintainer="Mario Lima <msclima@uporto.pt>"
 
 WORKDIR /app
 
-RUN ls
-
 COPY go.mod go.sum ./
 
 RUN go mod download
@@ -20,4 +18,4 @@ RUN go build -o crawler .
 
 EXPOSE 8080
 
-CMD ["./crawler"]
+ENTRYPOINT ["./crawler"]

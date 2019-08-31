@@ -1,57 +1,55 @@
 package main
 
 import (
-  "github.com/google/go-github/github" //multiple crawling methods need most of these functions
   log "github.com/sirupsen/logrus"
-  "context"
-  "os"
 
-  "flag" //cli args
-  "github.com/pkg/profile"
+  "github.com/pkg/profile"			  //profiler for debugging
 
-  "github.com/mariolima/repocrawl/pkg/crawler"
   "fmt"
+  "github.com/mariolima/repocrawl/pkg/crawler"
 )
 
-
-const bucket_host string = "https://api.bitbucket.org"
-
 var GITHUB_ACCESS_TOKEN string
-
-func getEnv(key, fallback string) string {
-    if value, ok := os.LookupEnv(key); ok {
-        return value
-    }
-    return fallback
-}
 
 func main() {
 	//Debug
 	defer profile.Start().Stop()
 
-	GITHUB_ACCESS_TOKEN = getEnv("GITHUB_ACCESS_TOKEN","")
 	level , err := log.ParseLevel(getEnv("LOG_LEVEL","info"))
 	if err != nil {
 		level = log.InfoLevel
 	}
 	log.SetLevel(level)
 
-	var query string
-	flag.StringVar(&query, "ghq", "min-saude.pt", "GitHub Query to /search/code")
-	flag.Parse()
+
+	cmd_opts, err := ParseOptions()
+	if err != nil {
+		log.Fatal("Cmd options Error: ", err)
+		return
+	}
 
 	log.WithFields(log.Fields{
-		"query": query,
+		"opts": cmd_opts,
 	}).Info("Got Opts:")
 
-	repoCrawler, _ := crawler.NewRepoCrawler(
+	if GITHUB_ACCESS_TOKEN = getEnv("GITHUB_ACCESS_TOKEN",""); GITHUB_ACCESS_TOKEN==""{
+		log.Fatal("Please 'export GITHUB_ACCESS_TOKEN' first")
+		return
+	}
+
+	repoCrawler, err := crawler.NewRepoCrawler(
 		crawler.CrawlerOpts{
 			GithubToken: GITHUB_ACCESS_TOKEN,
+			BitbucketHost: *cmd_opts.BitbucketHost,
+			RulesFile: *cmd_opts.RulesFile,
 		},
 	)
+	if err != nil {
+		log.Fatal("Failed creating new Crawler: ", err)
+		return
+	}
 
-	//repoCrawl test
-
+	// Channel for Matches found
 	matches := make(chan crawler.Match)
 
 	// go repoCrawler.DeepCrawlBitbucketUser("", matches)
@@ -62,7 +60,7 @@ func main() {
 	// go repoCrawler.DeepCrawlGithubOrg("TwilioDevEd",matches)
 	// go repoCrawler.DeepCrawlGithubUser("",matches)
 
-	go repoCrawler.GithubCodeSearch(query, matches)
+	go repoCrawler.GithubCodeSearch(*cmd_opts.GithubSearchQuery, matches)
 
 	for{
 		select{
@@ -70,10 +68,4 @@ func main() {
 			fmt.Printf("%-30s %-90s %s\n",match.Rule.Regex,match.Line,match.URL)
 		}
 	}
-}
-
-func FetchOrganizations(username string) ([]*github.Organization, error) {
-	client := github.NewClient(nil)
-	orgs, _, err := client.Organizations.List(context.Background(), username, nil)
-	return orgs, err
 }

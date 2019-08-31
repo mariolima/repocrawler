@@ -1,7 +1,6 @@
 package crawler
 
 import(
-	_"github.com/mariolima/repocrawl/internal/entities"
 	"github.com/mariolima/repocrawl/cmd/utils"
 
 	"gopkg.in/src-d/go-git.v4"								//It's def heavy but gets the job done - any alternatives for commit crawling?
@@ -14,9 +13,33 @@ import(
 	"bufio"
 	"strings"
 
-	"fmt"													//rm later
+	"fmt"													//TODO move funcs that use these `Sprintf` to cmd/utils
 )
 
+
+/*
+	TODO task system
+*/
+// type CrawlerTask struct{
+// 	reponseChan		chan Match
+// 	nthreads		int
+// }
+//
+// func (ct *CrawlerTask) DeepCrawl(giturl string) (error) {
+// 	//does the crawling
+// 	//blablabla
+// 	ct.responseChan<-nil
+// 	return nil
+// }
+//
+// func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
+// 	// setup goroutines with c.Opts (nthreads)
+// 	// adds task to the list of Tasks in Crawler
+// 	c.AddTask(&CrawlerTask{
+// 		responseChan: respChan,
+// 	})
+// 	return nil
+// }
 
 /*
 	Crawls Git repository and retrieves matches with a given `channel` 
@@ -29,6 +52,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 	// log.Trace(r)
 	if err != nil {
 		log.Fatal("Error: ", err)
+		return err
 	}
 
 	// ... retrieves the commit history

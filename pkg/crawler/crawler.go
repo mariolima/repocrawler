@@ -3,7 +3,7 @@ package crawler
 import(
 	"github.com/mariolima/repocrawl/pkg/github"
 	"github.com/mariolima/repocrawl/pkg/bitbucket"
-	_"github.com/mariolima/repocrawl/pkg/gitlab"
+	_"github.com/mariolima/repocrawl/pkg/gitlab"	//TODO
 	"github.com/mariolima/repocrawl/internal/entities"
 	"github.com/mariolima/repocrawl/cmd/utils"
 
@@ -13,6 +13,11 @@ import(
 	"strings"
 
 	"fmt" //TODO used just to format github lines #L01
+
+
+	"encoding/json"	//to get the rules file
+	"io/ioutil"
+	"os"
 )
 
 type crawler struct{
@@ -24,24 +29,22 @@ type crawler struct{
 
 type CrawlerOpts struct{
 	GithubToken				string		`json:"github_token,omitempty"`
+	BitbucketHost			string		`json:"bitbucket_host,omitempty"`
 	RulesFile				string		`json:"rules_file,omitempty"`
 }
 
-type Crawler interface{
-
-}
-
-type Task struct{
-	MatchesChannel	chan Match
-}
+// type Task struct{
+// 	MatchesChannel	chan Match
+// }
 
 func NewRepoCrawler(opts CrawlerOpts) (*crawler, error) {
 	//TODO depending on the opts - create only the required Clients
 	c:=crawler{
 		Github: github.NewCrawler(opts.GithubToken),
-		Bitbucket: bitbucket.NewCrawler("https://api.bitbucket.org/2.0","test","tesT"),
+		Bitbucket: bitbucket.NewCrawler(opts.BitbucketHost, "test","tesT"),
 		Opts: opts,
 	}
+	log.Info(c.Opts.RulesFile)
 	err := c.compileRegexes() //Pre compile regexes for better performance
 	if err != nil{
 		log.Error("Couldn't load Regexes")
@@ -50,24 +53,6 @@ func NewRepoCrawler(opts CrawlerOpts) (*crawler, error) {
 	log.Debug("Compiled Regexes Successfully")
 	return &c, nil
 }
-
-type Match struct { //Has to be generic - TODO move to other pkg
-	Rule			MatchRule
-	Line			string
-	LineNr			int
-	Value			string
-	//Repository struct // User struct and other generic stuff
-	URL				string
-	SearchResult	entities.SearchResult
-}
-
-type MatchRule struct {
-	Type		string
-	Regex		string
-}
-
-
-type CodeText string
 
 func (c *crawler) GithubCodeSearch(query string, response chan Match) {
 	//make new task and setup multithreading with c.Opts etc
@@ -102,8 +87,9 @@ func (c *crawler) GithubCodeSearch(query string, response chan Match) {
 
 
 func (c *crawler) compileRegexes() error {
-	//TODO load these from ConfigFile using c.Opts.RulesFile
-	// rules taken from https://github.com/dxa4481/truffleHogRegexes/blob/master/truffleHogRegexes/regexes.json :)
+	// some of the rules taken from https://github.com/dxa4481/truffleHogRegexes/blob/master/truffleHogRegexes/regexes.json :)
+	// but some were changed for better accuracy
+	// List of popular API services and their keyworks from https://github.com/streaak/keyhacks
 	rules := map[string]map[string]string{
 		"keywords":{
 			// "secret":"(?i)(secret)\\W",
@@ -176,6 +162,19 @@ func (c *crawler) compileRegexes() error {
 			"Pendo Integration API Key": "(?i)['\"]{0,1}(x-pendo-integration-key)['\"]{0,1}\\s{0,1}[:=]\\s{0,1}['\"]{0,1}[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}['\"]{0,1}\\W",
 		},
 	}
+
+	// save regexes as a test - TODO delete later
+	file, _ := json.MarshalIndent(rules, "", " ")
+	_ = ioutil.WriteFile("rules.json", file, 0644)
+
+	// read rules File
+	jsonFile, err := os.Open(c.Opts.RulesFile)
+	if err != nil{
+		log.Error("Couldn't Open regexes file ", c.Opts.RulesFile)
+		return err
+	}
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	json.Unmarshal(byteValue, &rules)
 
 	//Retarded code - fix later ?
 	c.MatchRules=map[string]map[string]*regexp.Regexp{}

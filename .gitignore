@@ -7,7 +7,6 @@
 *.pem
 *.key
 
-*.png
 *.bolt
 
 # Test binary, build with `go test -c`

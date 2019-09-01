@@ -8,7 +8,7 @@ type Match struct { //Has to be generic - TODO move to other pkg
 	Rule			MatchRule
 	Line			string
 	LineNr			int
-	Value			string
+	Values			[]string
 	//Repository struct // User struct and other generic stuff
 	URL				string
 	SearchResult	entities.SearchResult

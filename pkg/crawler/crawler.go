@@ -5,7 +5,6 @@ import(
 	"github.com/mariolima/repocrawl/pkg/bitbucket"
 	_"github.com/mariolima/repocrawl/pkg/gitlab"	//TODO
 	"github.com/mariolima/repocrawl/internal/entities"
-	"github.com/mariolima/repocrawl/cmd/utils"
 
 	log "github.com/sirupsen/logrus"
 	"regexp"
@@ -143,8 +142,9 @@ func (c *crawler) compileRegexes() error {
 			/*
 				MY RULES ^_^
 			*/
-			"Generic Key/Secret": "\\S\\w+[Kk][Ee][Yy]\\s{0,1}[=:]\\s['\"].*['\"]",
-			"Hardcoded Password": "(?i)(password)\\s{0,1}[=:]+\\s['\"].*['\"]+\\s", //Slightly better regex for passwords
+			// "Generic Key/Secret": "(?i)(key)\\s{0,1}[=:]+\\s{0,1}['\"].{1,}['\"]+\\W",		//flawed /w big oneliners - key:"down"asdasdasdas" fix
+			"Generic Key/Secret": "(?i)(key)\\s{0,1}[=:]+\\s{0,1}['\"]+[^\"|^']+['\"]",
+			"Hardcoded Password": "(?i)(password)\\s{0,1}[=:]+\\s{0,1}['\"].{1,}['\"]+\\W", //Slightly better regex for passwords
 			"Fastly API Key": "\\W(Fastly-key)\\W*[A-Za-z0-9+=]{44,}\\W", //is it b64 tho?
 			"Disqus API Key": "\\W(?i)(disqus).+\\w[K|k][E|e][Y|y]\\W+[A-Za-z0-9]{64}\\W",
 			"Zoho Desk Token": "[0-9]{4}[.]+[0-9a-f]{32}[.]+[0-9a-f]{32}", //https://desk.zoho.com/DeskAPIDocument
@@ -190,17 +190,17 @@ func (c *crawler) compileRegexes() error {
 
 func (c *crawler) RegexLine(line string) (matches []Match) {
 	results := make(map[string]Match)										// map of matches in order to avoid duplicates with the same Rules
+																			// prioratizes later Regexes (more critical)
 	for rule_type, regexes := range c.MatchRules{
 		for rule, re := range regexes {
 			// matched, err := regexp.Match(regex, []byte(line))
 			ms := re.FindAllString(line,-1) //https://golang.org/pkg/regexp/#Regexp.FindAllString
 			if(len(ms)>0) {
 				result:=line
-				result=utils.HighlightWords(line,ms)
 				results[line]=Match{
 					Rule: MatchRule{ rule_type, rule },
-					Value: ms[0],
-					Line: strings.TrimSpace(result),
+					Values: ms,
+					Line: strings.TrimSpace(result), //TODO trim length
 				}
 				// matches=append(matches,Match{
 				// 	Rule: MatchRule{ rule_type, rule },

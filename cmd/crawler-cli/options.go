@@ -16,6 +16,7 @@ type Options struct {
 	GithubOrg				*string		`json:"-"`
 	BitbucketHost			*string		`json:"-"`
 	BitbucketRepo			*string		`json:"-"`
+	BitbucketUser			*string		`json:"-"`
 	BitbucketCreds			*BitbucketCreds
 }
 
@@ -26,14 +27,15 @@ type BitbucketCreds struct{
 
 func ParseOptions() (Options, error) {
   options := Options{
-		RulesFile:			flag.String("rulesfile", "rules.json", "Json file with all the regexes"),
+		RulesFile:			flag.String("r", "rules.json", "Json file with all the regexes"),
 		GitUrl:				flag.String("git", "", "Crawls single repository given a .git Url"),
-		GithubSearchQuery:	flag.String("ghq", "", "Search all of GitHub for specified query and match for secrets"),
+		GithubSearchQuery:	flag.String("q", "", "Search GitHub for code containing specified query and match content for secrets"),
 		GithubRepo:			flag.String("githubrepo", "", "DeepCrawls github repository and all repositories of it's contributors (format: user/repo)"),
 		GithubUser:			flag.String("githubuser", "", "DeepCrawls all github repositories of given user"),
 		GithubOrg:			flag.String("githuborg", "", "DeepCrawls github Org"),
 		BitbucketHost:		flag.String("bitbuckethost", "https://api.bitbucket.org/2.0", "Bitbucket base API host"),
 		BitbucketRepo:		flag.String("bitbucketrepo", "", "DeepCrawls bitbucket repository and all repositories of it's contributors (format: user/repo)"),
+		BitbucketUser:		flag.String("bitbucketuser", "", "DeepCrawls all bitbucket repositories of given user"),
   }
 
   options.BitbucketCreds = &BitbucketCreds{

@@ -49,13 +49,11 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 	r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
 		URL: giturl,
 	})
-	// log.Trace(r)
 	if err != nil {
 		log.Fatal("Error: ", err)
 		return err
 	}
-
-	// ... retrieves the commit history
+	log.Debug("Done cloning ",giturl)
 
 	// map to avoid repeated matches
 	var matches = make(map[string]Match)
@@ -75,7 +73,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 
 				file_patches:=patch.FilePatches()
 				for _, p := range file_patches{						//https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#FilePatch
-					log.Trace("Going for patch ",p)
+					// log.Trace("Going for patch ",p)
 					if p.IsBinary() {
 						log.Trace("Found binary file, skipping")
 						continue									// might add this later with c.Opts
@@ -86,13 +84,14 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 						i:=1
 						for scanner.Scan() {
 							line := scanner.Text()
+							log.Trace(line)
 							found := c.RegexLine(line)
 							// dumb
 							if len(found) > 0 {
 								outp:=chunk.Content()
 								for _, match := range found{
 									// match.URL=result.FileURL
-									outp=utils.HighlightWord(outp, match.Value)
+									outp=utils.HighlightWords(outp, match.Values)
 									// match.SearchResult=result
 									log.Debug("Commit:",commit.Hash)
 									log.Debug("From ",commit.Author, " ",commit.Message)
@@ -110,7 +109,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 										respChan<-match
 									}
 								}
-								// log.Trace(outp)
+								log.Trace(outp)
 							}
 							i+=1
 						}

@@ -2,6 +2,7 @@ package crawler
 
 import(
 	"github.com/mariolima/repocrawl/cmd/utils"
+	"github.com/mariolima/repocrawl/internal/entities"
 
 	"gopkg.in/src-d/go-git.v4"								//It's def heavy but gets the job done - any alternatives for commit crawling?
 	"gopkg.in/src-d/go-git.v4/plumbing"
@@ -189,7 +190,7 @@ func (c *crawler) DeepCrawlGithubRepo(user, repo string, respChan chan Match) {
 	for _, user := range users {
 		c.DeepCrawlGithubUser(user.Name, respChan)
 	}
-	log.Warn(":::: DONE ::::")
+	log.Warn(":::: DONE crawling users of repo ",user,"/",repo)
 }
 
 func (c *crawler) DeepCrawlBitbucketRepo(user, repo string, respChan chan Match) {
@@ -199,7 +200,7 @@ func (c *crawler) DeepCrawlBitbucketRepo(user, repo string, respChan chan Match)
 		log.Trace(user.UUID)
 		c.DeepCrawlBitbucketUser(user.UUID, respChan)
 	}
-	log.Warn(":::: DONE ::::")
+	log.Warn(":::: DONE crawling users in repo ",repo)
 }
 
 //same API 
@@ -207,17 +208,22 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 	// Also works for Orgs
 	repos, _ := c.Github.GetUserRepositories(org)
 	log.Info(fmt.Sprintf("Found %d repos on Org %s",len(repos), org))
+	var crawled_users = make(map[string]entities.User)
 	for _, repo := range repos {
 		users, _ := c.Github.GetRepoContributors(repo.User.Name, repo.Name)
 		log.Info("Found ",len(users), " users for repo ", repo.Name)
 		for _, user := range users {
+			if _, ok := crawled_users[user.Name]; ok{
+				continue // avoid deepcrawling same User twice
+			}
 			log.Info("DeepCrawling user ", user.Name)
 			c.DeepCrawlGithubUser(user.Name, respChan)
+			crawled_users[user.Name]=user
 		}
 	}
 
 	// c.DeepCrawlGithubUser(org, respChan)
-	log.Warn(":::: DONE ::::")
+	log.Warn(":::: DONE crawling Org ",org)
 }
 
 func (c *crawler) DeepCrawlBitbucketUser(user string, respChan chan Match) {
@@ -240,7 +246,7 @@ func (c *crawler) DeepCrawlBitbucketUser(user string, respChan chan Match) {
 	// 	}(repo.GitURL,respChan)
 	// }
 
-	log.Warn(":::: DONE ::::")
+	log.Warn(":::: DONE crawling repos of user ",user)
 }
 
 func (c *crawler) DeepCrawlGithubUser(user string, respChan chan Match) {
@@ -250,5 +256,5 @@ func (c *crawler) DeepCrawlGithubUser(user string, respChan chan Match) {
 		log.Info("DeepCrawling repo ", repo.GitURL)
 		c.DeepCrawl(repo.GitURL,respChan)
 	}
-	log.Warn(":::: DONE ::::")
+	log.Warn(":::: DONE crawling repos of user ",user)
 }

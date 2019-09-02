@@ -43,9 +43,8 @@ func main() {
 	}
 
 	SLACK_WEBHOOK := getEnv("SLACK_WEBHOOK","");
-	if GITHUB_ACCESS_TOKEN==""{
-		log.Error("Could not import SLACK_WEBHOOK - not doing notifications")
-		return
+	if SLACK_WEBHOOK==""{
+		log.Error("SLACK_WEBHOOK not in Env - not doing notifications")
 	}
 
 	repoCrawler, err := crawler.NewRepoCrawler(

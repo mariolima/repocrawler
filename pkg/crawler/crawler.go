@@ -56,6 +56,7 @@ func NewRepoCrawler(opts CrawlerOpts) (*crawler, error) {
 
 func (c *crawler) GithubCodeSearch(query string, response chan Match) {
 	//make new task and setup multithreading with c.Opts etc
+	var matches = make(map[string]Match)
 	searchResultChan := make(chan entities.SearchResult)
 	go c.Github.SearchCode(query,searchResultChan)
 	for {
@@ -66,11 +67,17 @@ func (c *crawler) GithubCodeSearch(query string, response chan Match) {
 			i:=1
 			for scanner.Scan() {
 				line := scanner.Text()
+				// if line already matched this session
+				if _, ok := matches[line]; ok {
+					continue
+				}
 				found := c.RegexLine(line)
 				// dumb
 				if len(found) > 0 {
 					log.Debug("Found:",found)
 					for _, match := range found{
+						// avoid dups
+						matches[line]=match
 						match.URL=fmt.Sprintf("%s#L%d",result.FileURL,i)
 						// match.URL=result.FileURL
 						match.SearchResult=result
@@ -117,7 +124,7 @@ func (c *crawler) compileRegexes() error {
 			*/
 			// "Generic Key/Secret": "(?i)(key)\\s{0,1}[=:]+\\s{0,1}['\"].{1,}['\"]+\\W",		//flawed /w big oneliners - key:"down"asdasdasdas" fix
 			"Generic Key/Secret": "(?i)(key)\\s{0,1}[=:]+\\s{0,1}['\"]+[^\"|^']+['\"]",
-			"Hardcoded Password": "(?i)(password)\\s{0,1}[=:]+\\s{0,1}['\"].{1,}['\"]+\\W", //Slightly better regex for passwords
+			"Hardcoded Password": "(?i)(password)\\s{0,1}[=:]+\\s{0,1}['\"].{3,}['\"]+\\W", //Slightly better regex for passwords
 		},
 		"critical":{
 			"Slack Token": "(xox[p|b|o|a]-[0-9]{12}-[0-9]{12}-[0-9]{12}-[a-z0-9]{32})",

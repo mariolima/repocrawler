@@ -97,7 +97,7 @@ func main() {
 	for{
 		select{
 		case match:=<-matches:
-			fmt.Printf("%-30s %-90s %s\n",match.Rule.Regex,utils.HighlightWords(match.Line, match.Values),match.URL)
+			fmt.Printf("%-30s %-90s %s\n",match.Rule.Regex,utils.HighlightWords(utils.TruncateString(match.Line,match.Values,20,500), match.Values),match.URL)
 			if match.Rule.Type == "critical" {
 				repoCrawler.Notify(match)
 			}

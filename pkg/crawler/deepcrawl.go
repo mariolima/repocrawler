@@ -213,12 +213,20 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 		users, _ := c.Github.GetRepoContributors(repo.User.Name, repo.Name)
 		log.Info("Found ",len(users), " users for repo ", repo.Name)
 		for _, user := range users {
-			if _, ok := crawled_users[user.Name]; ok{
-				continue // avoid deepcrawling same User twice
-			}
-			log.Info("DeepCrawling user ", user.Name)
-			c.DeepCrawlGithubUser(user.Name, respChan)
-			crawled_users[user.Name]=user
+			maxGoroutines := 3
+			guard := make(chan struct{}, maxGoroutines)
+			go func(user entities.User,respChan chan Match) {
+					if strings.Contains(strings.ToUpper(user.Bio),strings.ToUpper(org)) {
+						log.Warn("User ", user.Name," has ",org," in his Bio")
+					}
+					if _, ok := crawled_users[user.Name]; ok{
+						return // avoid deepcrawling same User twice
+					}
+					log.Info("DeepCrawling user ", user.Name)
+					c.DeepCrawlGithubUser(user.Name, respChan)
+					crawled_users[user.Name]=user
+					<-guard
+			}(user,respChan)
 		}
 	}
 

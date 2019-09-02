@@ -138,6 +138,16 @@ func (c *GitHubCrawler) formatContributor(contributor *github.Contributor) entit
 	//For now
 	return entities.User{
 		Name:*contributor.Login,
+		//TODO from Contributor get User data - 1 more request :(
+		// Bio:*contributor.Bio,
+	}
+}
+
+func (c *GitHubCrawler) formatUser(user *github.User) entities.User {
+	//For now
+	return entities.User{
+		Name:*user.Login,
+		Bio:*user.Bio,
 	}
 }
 
@@ -188,8 +198,21 @@ func (c *GitHubCrawler) GetUserRepositories(user string) (repos []entities.Repos
 		page=rsp.NextPage
 		// page+=1
 	}
-
 	return repos, nil
+}
+
+func (c *GitHubCrawler) GetOrgMembers(org string) (users []entities.User, err error){
+	results, _, err := c.client.Organizations.ListMembers(context.Background(), org, &github.ListMembersOptions{
+			PublicOnly: true,
+	})
+	if err != nil {
+		log.Fatal("Error: ", err)
+		return users, nil
+	}
+	for _, user := range results{
+		users=append(users,c.formatUser(user))
+	}
+	return users, nil
 }
 
 func (c *GitHubCrawler) GetRepoContributors(user, repo string) (users []entities.User, err error){

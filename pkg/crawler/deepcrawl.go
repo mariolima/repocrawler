@@ -21,6 +21,8 @@ import(
 	"strings"
 
 	"fmt"													//TODO move funcs that use these `Sprintf` to cmd/utils
+
+	"sync"
 )
 
 
@@ -213,6 +215,7 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 		log.Info("Found ",len(users), " users for repo ", repo.Name)
 
 		guard := make(chan struct{}, c.Opts.NrThreads)
+		var mutex = &sync.Mutex{}
 		for _, user := range users {
 			guard <- struct{}{}
 			go func(user entities.User,respChan chan Match) {
@@ -220,11 +223,15 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 						log.Warn("User ", user.Name," has ",org," in his Bio")
 					}
 					if _, ok := crawled_users[user.Name]; ok{
+						<-guard
 						return // avoid deepcrawling same User twice
+					}else{
+						mutex.Lock()
+						crawled_users[user.Name]=user
+						mutex.Unlock()
 					}
 					log.Info("DeepCrawling user ", user.Name)
 					c.DeepCrawlGithubUser(user.Name, respChan)
-					crawled_users[user.Name]=user
 					<-guard
 			}(user,respChan)
 		}

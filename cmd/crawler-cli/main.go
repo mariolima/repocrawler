@@ -49,6 +49,7 @@ func main() {
 
 	repoCrawler, err := crawler.NewRepoCrawler(
 		crawler.CrawlerOpts{
+			NrThreads: *cmd_opts.NrThreads,
 			GithubToken: GITHUB_ACCESS_TOKEN,
 			BitbucketHost: *cmd_opts.BitbucketHost,
 			RulesFile: *cmd_opts.RulesFile,

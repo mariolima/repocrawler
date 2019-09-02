@@ -203,7 +203,6 @@ func (c *crawler) DeepCrawlBitbucketRepo(user, repo string, respChan chan Match)
 	log.Warn(":::: DONE crawling users in repo ",repo)
 }
 
-//same API 
 func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 	// Also works for Orgs
 	repos, _ := c.Github.GetUserRepositories(org)
@@ -212,9 +211,10 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 	for _, repo := range repos {
 		users, _ := c.Github.GetRepoContributors(repo.User.Name, repo.Name)
 		log.Info("Found ",len(users), " users for repo ", repo.Name)
+
+		guard := make(chan struct{}, c.Opts.NrThreads)
 		for _, user := range users {
-			maxGoroutines := 3
-			guard := make(chan struct{}, maxGoroutines)
+			guard <- struct{}{}
 			go func(user entities.User,respChan chan Match) {
 					if strings.Contains(strings.ToUpper(user.Bio),strings.ToUpper(org)) {
 						log.Warn("User ", user.Name," has ",org," in his Bio")

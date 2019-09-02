@@ -31,6 +31,7 @@ type CrawlerOpts struct{
 	BitbucketHost			string		`json:"bitbucket_host,omitempty"`
 	RulesFile				string		`json:"rules_file,omitempty"`
 	SlackWebhook			string		`json:"webhook,omitempty"`
+	NrThreads				int			`json:"nthreads,omitempty"`
 }
 
 // type Task struct{

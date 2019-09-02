@@ -68,7 +68,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 	// ... just iterates over the commits, printing it
 	refIter, err := r.Branches()
 	err = refIter.ForEach(func(cref *plumbing.Reference) error {
-		log.Info("Current Branch ",cref)
+		log.Debug("Current Branch ",cref)
 		cIter, _ := r.Log(&git.LogOptions{From: cref.Hash()})
 		err = cIter.ForEach(func(commit *object.Commit) error {
 			log.Trace("Current commit ",commit)
@@ -204,7 +204,19 @@ func (c *crawler) DeepCrawlBitbucketRepo(user, repo string, respChan chan Match)
 
 //same API 
 func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
-	c.DeepCrawlGithubUser(org, respChan)
+	// Also works for Orgs
+	repos, _ := c.Github.GetUserRepositories(org)
+	log.Info(fmt.Sprintf("Found %d repos on Org %s",len(repos), org))
+	for _, repo := range repos {
+		users, _ := c.Github.GetRepoContributors(repo.User.Name, repo.Name)
+		log.Info("Found ",len(users), " users for repo ", repo.Name)
+		for _, user := range users {
+			log.Info("DeepCrawling user ", user.Name)
+			c.DeepCrawlGithubUser(user.Name, respChan)
+		}
+	}
+
+	// c.DeepCrawlGithubUser(org, respChan)
 	log.Warn(":::: DONE ::::")
 }
 

@@ -11,7 +11,10 @@ import (
   "github.com/mariolima/repocrawl/cmd/utils"		// used to Highlight matches with colors
 )
 
-var GITHUB_ACCESS_TOKEN string
+var (
+	GITHUB_ACCESS_TOKEN string
+	SLACK_WEBHOOK		string
+)
 
 func main() {
 	//Debug
@@ -39,11 +42,18 @@ func main() {
 		return
 	}
 
+	SLACK_WEBHOOK := getEnv("SLACK_WEBHOOK","");
+	if GITHUB_ACCESS_TOKEN==""{
+		log.Error("Could not import SLACK_WEBHOOK - not doing notifications")
+		return
+	}
+
 	repoCrawler, err := crawler.NewRepoCrawler(
 		crawler.CrawlerOpts{
 			GithubToken: GITHUB_ACCESS_TOKEN,
 			BitbucketHost: *cmd_opts.BitbucketHost,
 			RulesFile: *cmd_opts.RulesFile,
+			SlackWebhook: SLACK_WEBHOOK,
 		},
 	)
 	if err != nil {
@@ -88,6 +98,9 @@ func main() {
 		select{
 		case match:=<-matches:
 			fmt.Printf("%-30s %-90s %s\n",match.Rule.Regex,utils.HighlightWords(match.Line, match.Values),match.URL)
+			if match.Rule.Type == "critical" {
+				repoCrawler.Notify(match)
+			}
 		}
 	}
 }

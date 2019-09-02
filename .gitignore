@@ -6,6 +6,7 @@
 *.dylib
 *.pem
 *.key
+*.backup
 
 *.bolt
 

@@ -6,7 +6,13 @@ import(
 	"gopkg.in/src-d/go-git.v4"								//It's def heavy but gets the job done - any alternatives for commit crawling?
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport/client"
 	"gopkg.in/src-d/go-git.v4/storage/memory"
+
+	"net/http"
+	"crypto/tls"
+	"time"
+	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 
 	log "github.com/sirupsen/logrus"
 
@@ -46,11 +52,12 @@ import(
 	This code is trash - need to fix
 */
 func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
+	setupClient()	// in order to disable SSL checking and timeout
 	r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
 		URL: giturl,
 	})
 	if err != nil {
-		log.Fatal("Error: ", err)
+		log.Error("Git Clone Error: ", err)
 		return err
 	}
 	log.Debug("Done cloning ",giturl)
@@ -144,10 +151,30 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 		return nil
 	})
 	if err != nil {
-		log.Fatal("Error: ", err)
+		log.Error("Error Getting Repository: ", err)
 	}
 	log.Info("Done with:",giturl)
 	return nil
+}
+
+func setupClient() {
+	customClient := &http.Client{
+		// accept any certificate (might be useful for testing)
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+
+		// 15 second timeout
+		Timeout: 10 * time.Second,
+
+		// don't follow redirect
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	// Override http(s) default protocol to use our custom client
+	client.InstallProtocol("https", githttp.NewClient(customClient))
 }
 
 func commitFileToUrl(giturl string, commitHash string, file string, line int) string {
@@ -162,6 +189,7 @@ func (c *crawler) DeepCrawlGithubRepo(user, repo string, respChan chan Match) {
 	for _, user := range users {
 		c.DeepCrawlGithubUser(user.Name, respChan)
 	}
+	log.Warn(":::: DONE ::::")
 }
 
 func (c *crawler) DeepCrawlBitbucketRepo(user, repo string, respChan chan Match) {
@@ -171,11 +199,13 @@ func (c *crawler) DeepCrawlBitbucketRepo(user, repo string, respChan chan Match)
 		log.Trace(user.UUID)
 		c.DeepCrawlBitbucketUser(user.UUID, respChan)
 	}
+	log.Warn(":::: DONE ::::")
 }
 
 //same API 
 func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 	c.DeepCrawlGithubUser(org, respChan)
+	log.Warn(":::: DONE ::::")
 }
 
 func (c *crawler) DeepCrawlBitbucketUser(user string, respChan chan Match) {
@@ -197,6 +227,8 @@ func (c *crawler) DeepCrawlBitbucketUser(user string, respChan chan Match) {
 	// 		<-guard
 	// 	}(repo.GitURL,respChan)
 	// }
+
+	log.Warn(":::: DONE ::::")
 }
 
 func (c *crawler) DeepCrawlGithubUser(user string, respChan chan Match) {
@@ -206,4 +238,5 @@ func (c *crawler) DeepCrawlGithubUser(user string, respChan chan Match) {
 		log.Info("DeepCrawling repo ", repo.GitURL)
 		c.DeepCrawl(repo.GitURL,respChan)
 	}
+	log.Warn(":::: DONE ::::")
 }

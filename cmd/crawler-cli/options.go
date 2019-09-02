@@ -17,6 +17,7 @@ type Options struct {
 	BitbucketHost			*string		`json:"-"`
 	BitbucketRepo			*string		`json:"-"`
 	BitbucketUser			*string		`json:"-"`
+	SlackWebhook			*string		`json:"-"`
 	BitbucketCreds			*BitbucketCreds
 }
 

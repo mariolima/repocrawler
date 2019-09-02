@@ -30,6 +30,7 @@ type CrawlerOpts struct{
 	GithubToken				string		`json:"github_token,omitempty"`
 	BitbucketHost			string		`json:"bitbucket_host,omitempty"`
 	RulesFile				string		`json:"rules_file,omitempty"`
+	SlackWebhook			string		`json:"webhook,omitempty"`
 }
 
 // type Task struct{
@@ -99,21 +100,7 @@ func (c *crawler) compileRegexes() error {
 			"jdbc":"(?i)(jdbc)",
 		},
 		"keys":{
-			"priv_keys":"(?s)(-----BEGIN (RSA|DSA|PGP|EC|) PRIVATE KEY.*END (RSA|DSA|PGP|EC|) PRIVATE KEY-----)",
-			"Slack Token": "(xox[p|b|o|a]-[0-9]{12}-[0-9]{12}-[0-9]{12}-[a-z0-9]{32})",
-			"RSA private key": "-----BEGIN RSA PRIVATE KEY-----",
-			"SSH (DSA) private key": "-----BEGIN DSA PRIVATE KEY-----",
-			"SSH (EC) private key": "-----BEGIN EC PRIVATE KEY-----",
-			"PGP private key block": "-----BEGIN PGP PRIVATE KEY BLOCK-----",
-			"Amazon AWS Access Key ID": "AKIA[0-9A-Z]{16}",
-			"Amazon MWS Auth Token": "amzn\\.mws\\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
-			"AWS API Key": "AKIA[0-9A-Z]{16}",
-			"Facebook Access Token": "EAACEdEose0cBA[0-9A-Za-z]+",
-			"Facebook OAuth": "[f|F][a|A][c|C][e|E][b|B][o|O][o|O][k|K].*['|\"][0-9a-f]{32}['|\"]",
 			// "GitHub": "[g|G][i|I][t|T][h|H][u|U][b|B].*['|\"][0-9a-zA-Z]{35,40}['|\"]", //giving me issues
-			"Generic API Key": "[a|A][p|P][i|I][_]?[k|K][e|E][y|Y].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
-			"Generic Secret": "[s|S][e|E][c|C][r|R][e|E][t|T].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
-			"Google API Key": "AIza[0-9A-Za-z\\-_]{35}",
 			//TODO FIX - Google API Keys not working properly
 			// "Google Cloud Platform API Key": "AIza[0-9A-Za-z\\-_]{35}",
 			// "Google Cloud Platform OAuth": "[0-9]+-[0-9A-Za-z_]{32}\\.apps\\.googleusercontent\\.com",
@@ -125,6 +112,29 @@ func (c *crawler) compileRegexes() error {
 			// "Google OAuth Access Token": "ya29\\.[0-9A-Za-z\\-_]+",
 			// "Google YouTube API Key": "AIza[0-9A-Za-z\\-_]{35}",
 			// "Google YouTube OAuth": "[0-9]+-[0-9A-Za-z_]{32}\\.apps\\.googleusercontent\\.com",
+			/*
+				MY RULES ^_^
+			*/
+			// "Generic Key/Secret": "(?i)(key)\\s{0,1}[=:]+\\s{0,1}['\"].{1,}['\"]+\\W",		//flawed /w big oneliners - key:"down"asdasdasdas" fix
+			"Generic Key/Secret": "(?i)(key)\\s{0,1}[=:]+\\s{0,1}['\"]+[^\"|^']+['\"]",
+			"Hardcoded Password": "(?i)(password)\\s{0,1}[=:]+\\s{0,1}['\"].{1,}['\"]+\\W", //Slightly better regex for passwords
+		},
+		"critical":{
+			"Slack Token": "(xox[p|b|o|a]-[0-9]{12}-[0-9]{12}-[0-9]{12}-[a-z0-9]{32})",
+			"Amazon AWS Access Key ID": "AKIA[0-9A-Z]{16}",
+			"Amazon MWS Auth Token": "amzn\\.mws\\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+			"AWS API Key": "AKIA[0-9A-Z]{16}",
+			"Facebook Access Token": "EAACEdEose0cBA[0-9A-Za-z]+",
+			"Facebook OAuth": "[f|F][a|A][c|C][e|E][b|B][o|O][o|O][k|K].*['|\"][0-9a-f]{32}['|\"]",
+			"priv_keys":"(?s)(-----BEGIN (RSA|DSA|PGP|EC|) PRIVATE KEY.*END (RSA|DSA|PGP|EC|) PRIVATE KEY-----)",
+			"RSA private key": "-----BEGIN RSA PRIVATE KEY-----",
+			"SSH (DSA) private key": "-----BEGIN DSA PRIVATE KEY-----",
+			"SSH (EC) private key": "-----BEGIN EC PRIVATE KEY-----",
+			"PGP private key block": "-----BEGIN PGP PRIVATE KEY BLOCK-----",
+			// "Auth": "\\W(Authorization:).+\\W",
+			"Generic API Key": "[a|A][p|P][i|I][_]?[k|K][e|E][y|Y].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
+			"Generic Secret": "[s|S][e|E][c|C][r|R][e|E][t|T].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
+			"Google API Key": "AIza[0-9A-Za-z\\-_]{35}",
 			"Heroku API Key": "[h|H][e|E][r|R][o|O][k|K][u|U].*[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}",
 			"MailChimp API Key": "[0-9a-f]{32}-us[0-9]{1,2}",
 			"Mailgun API Key": "key-[0-9a-zA-Z]{32}",
@@ -139,16 +149,9 @@ func (c *crawler) compileRegexes() error {
 			"Twilio API Key": "SK[0-9a-fA-F]{32}",
 			"Twitter Access Token": "[t|T][w|W][i|I][t|T][t|T][e|E][r|R].*[1-9][0-9]+-[0-9a-zA-Z]{40}",
 			"Twitter OAuth": "[t|T][w|W][i|I][t|T][t|T][e|E][r|R].*['|\"][0-9a-zA-Z]{35,44}['|\"]",
-			/*
-				MY RULES ^_^
-			*/
-			// "Generic Key/Secret": "(?i)(key)\\s{0,1}[=:]+\\s{0,1}['\"].{1,}['\"]+\\W",		//flawed /w big oneliners - key:"down"asdasdasdas" fix
-			"Generic Key/Secret": "(?i)(key)\\s{0,1}[=:]+\\s{0,1}['\"]+[^\"|^']+['\"]",
-			"Hardcoded Password": "(?i)(password)\\s{0,1}[=:]+\\s{0,1}['\"].{1,}['\"]+\\W", //Slightly better regex for passwords
 			"Fastly API Key": "\\W(Fastly-key)\\W*[A-Za-z0-9+=]{44,}\\W", //is it b64 tho?
 			"Disqus API Key": "\\W(?i)(disqus).+\\w[K|k][E|e][Y|y]\\W+[A-Za-z0-9]{64}\\W",
 			"Zoho Desk Token": "[0-9]{4}[.]+[0-9a-f]{32}[.]+[0-9a-f]{32}", //https://desk.zoho.com/DeskAPIDocument
-			// "Auth": "\\W(Authorization:).+\\W",
 			"Auth Bearer": "(Authorization: Bearer )[a-zA-z0-9]{20,}\\S",
 			"Auth Basic": "(Basic )[a-zA-z0-9+=]{20,}\\S",
 			"Generic Hash Token": "\\w+[TtOoKkEeNn]\\s{0,1}[=:]\\s{0,1}([0-9a-f]{32}|[0-9a-f]{40}|[0-9a-f]{56}|[0-9a-f]{64})\\W", //md5, sha1, sha224, sha256

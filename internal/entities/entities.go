@@ -4,29 +4,29 @@
 
 package entities
 
-import(
+import (
 	"fmt"
 	// "time"
 )
 
-type Repository struct{
-	GitURL				string
-	Name				string
-	User				User
+type Repository struct {
+	GitURL string
+	Name   string
+	User   User
 }
 
-type User struct{
-	Name				string
-	Bio					string
-	UUID				string
+type User struct {
+	Name string
+	Bio  string
+	UUID string
 }
 
-type SearchResult struct{
-	Repository			Repository
-	FileURL				string
-	FileContent			string
+type SearchResult struct {
+	Repository  Repository
+	FileURL     string
+	FileContent string
 }
 
 func (sr SearchResult) String() string {
-	return fmt.Sprintf("FileURL: %s\nRepository:\n\tGitURL: %s\n\tName:%s\n\tUser:%s", sr.FileURL,sr.Repository.GitURL,sr.Repository.Name,sr.Repository.User)
+	return fmt.Sprintf("FileURL: %s\nRepository:\n\tGitURL: %s\n\tName:%s\n\tUser:%s", sr.FileURL, sr.Repository.GitURL, sr.Repository.Name, sr.Repository.User)
 }

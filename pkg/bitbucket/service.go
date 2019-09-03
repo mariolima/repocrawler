@@ -1,19 +1,19 @@
 package bitbucket
 
-import(
-  log "github.com/sirupsen/logrus"
+import (
+	log "github.com/sirupsen/logrus"
 
-  "github.com/mariolima/repocrawl/internal/entities"		//structs common in GitHub/GitLab/BitBucket - RepoData/UserData etc
+	"github.com/mariolima/repocrawl/internal/entities" //structs common in GitHub/GitLab/BitBucket - RepoData/UserData etc
 
-  "github.com/bndr/gopencils"
+	"github.com/bndr/gopencils"
 
-  "strings"													// for the pagination parsing
+	"strings" // for the pagination parsing
 )
 
-type BitbucketCrawler struct{
-	baseAPI			string
-	username		string
-	password		string
+type BitbucketCrawler struct {
+	baseAPI  string
+	username string
+	password string
 	// client			*gopencils.Api
 }
 
@@ -28,85 +28,83 @@ func NewCrawler(baseAPI, username, password string) *BitbucketCrawler {
 // 	return client
 // }
 
-func (c *BitbucketCrawler) GetUserRepositories(user string) (repos []entities.Repository, err error){
+func (c *BitbucketCrawler) GetUserRepositories(user string) (repos []entities.Repository, err error) {
 	// auth := gopencils.BasicAuth{"username", "password"}
 	api := gopencils.Api("https://api.bitbucket.org/2.0")
 
-	page:="1"
-	for{
+	page := "1"
+	for {
 		repositories := &RepositoriesResponse{}
-		resource, err := api.Res("repositories").Res(user, repositories).Get(map[string]string{"pagelen": "100","page":page})
-		log.Trace("GetUserRepositories resource resp: ",resource)
-		if err != nil{
+		resource, err := api.Res("repositories").Res(user, repositories).Get(map[string]string{"pagelen": "100", "page": page})
+		log.Trace("GetUserRepositories resource resp: ", resource)
+		if err != nil {
 			log.Fatal("Error: %v\n", err)
 			return repos, err
 		}
-		log.Info("GetUserRepositories: got ",repositories.Size," total repos for user ",user)
+		log.Info("GetUserRepositories: got ", repositories.Size, " total repos for user ", user)
 		for _, repo := range repositories.Values {
 			// Repo has to be Public and Git TODO add Mercurial support
-			if !repo.IsPrivate && strings.HasSuffix(repo.Links.Clone[0].Href, ".git"){
+			if !repo.IsPrivate && strings.HasSuffix(repo.Links.Clone[0].Href, ".git") {
 				log.Debug(repo.Links.Clone[0].Href)
-				repos=append(repos,c.formatRepo(&repo))
+				repos = append(repos, c.formatRepo(&repo))
 			}
 		}
 		log.Debug(repositories.Next)
 
 		//TODO fix this CODE - its REALLY shit
 		if next := repositories.Next; next != "" {
-			page=strings.Split(next, "=")[2]
-		}else{
+			page = strings.Split(next, "=")[2]
+		} else {
 			break
 		}
 	}
 	return repos, err
 }
 
-func (c *BitbucketCrawler) GetRepoContributors(user, repo string) (users []entities.User, err error){
+func (c *BitbucketCrawler) GetRepoContributors(user, repo string) (users []entities.User, err error) {
 	api := gopencils.Api("https://api.bitbucket.org/2.0")
-	page:="1"
-	users_map:=make(map[string]User)
-	for{
+	page := "1"
+	users_map := make(map[string]User)
+	for {
 		commits := &CommitsResponse{}
-		resource, err := api.Res("repositories").Res(user).Res(repo).Res("commits",commits).Get(map[string]string{"pagelen": "100","page":page})
-		log.Trace("GetRepoContributors resource resp: ",resource)
-		if err != nil{
+		resource, err := api.Res("repositories").Res(user).Res(repo).Res("commits", commits).Get(map[string]string{"pagelen": "100", "page": page})
+		log.Trace("GetRepoContributors resource resp: ", resource)
+		if err != nil {
 			log.Fatal("Error: %v\n", err)
 			return users, err
 		}
 
 		for _, commit := range commits.Values {
-			users_map[commit.Author.User.UUID]=commit.Author.User
+			users_map[commit.Author.User.UUID] = commit.Author.User
 		}
 		log.Trace(commits.Next)
 
 		//TODO fix this CODE - its REALLY shit
 		if next := commits.Next; next != "" {
-			page=strings.Split(next, "=")[2]
-		}else{
+			page = strings.Split(next, "=")[2]
+		} else {
 			break
 		}
 	}
-	log.Info("GetRepoContributors ",len(users_map), " users found for repo ",repo)
-	for _, user := range users_map{
-		users=append(users, c.formatContributor(&user))
+	log.Info("GetRepoContributors ", len(users_map), " users found for repo ", repo)
+	for _, user := range users_map {
+		users = append(users, c.formatContributor(&user))
 	}
 	return users, err
 }
 
-
 func (c *BitbucketCrawler) formatContributor(contributor *User) entities.User {
 	//For now
 	return entities.User{
-		Name:contributor.Nickname,
-		UUID:contributor.UUID,
+		Name: contributor.Nickname,
+		UUID: contributor.UUID,
 	}
 }
-
 
 func (c *BitbucketCrawler) formatRepo(repository *Repository) entities.Repository {
 	return entities.Repository{
 		GitURL: repository.Links.Clone[0].Href,
-		Name: repository.Name,
+		Name:   repository.Name,
 		User: entities.User{
 			Name: repository.Owner.Username,
 			UUID: repository.Owner.UUID,

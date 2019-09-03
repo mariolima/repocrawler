@@ -1,8 +1,8 @@
 package bitbucket
 
 type CommitsResponse struct {
-	Next    string                  `json:"next"`
-	Pagelen int64                   `json:"pagelen"`
+	Next    string   `json:"next"`
+	Pagelen int64    `json:"pagelen"`
 	Values  []Commit `json:"values"`
 }
 
@@ -70,7 +70,7 @@ type CommitsResponse_sub9 struct {
 }
 
 type CommitsResponse_sub4 struct {
-	Raw  string							`json:"raw"`
-	Type string							`json:"type"`
-	User User							`json:"user"`
+	Raw  string `json:"raw"`
+	Type string `json:"type"`
+	User User   `json:"user"`
 }

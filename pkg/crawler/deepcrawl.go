@@ -1,30 +1,29 @@
 package crawler
 
-import(
+import (
 	"github.com/mariolima/repocrawl/cmd/utils"
 	"github.com/mariolima/repocrawl/internal/entities"
 
-	"gopkg.in/src-d/go-git.v4"								//It's def heavy but gets the job done - any alternatives for commit crawling?
+	"gopkg.in/src-d/go-git.v4" //It's def heavy but gets the job done - any alternatives for commit crawling?
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/client"
 	"gopkg.in/src-d/go-git.v4/storage/memory"
 
-	"net/http"
 	"crypto/tls"
-	"time"
 	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
+	"net/http"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
 	"bufio"
 	"strings"
 
-	"fmt"													//TODO move funcs that use these `Sprintf` to cmd/utils
+	"fmt" //TODO move funcs that use these `Sprintf` to cmd/utils
 
 	"sync"
 )
-
 
 /*
 	TODO task system
@@ -51,11 +50,11 @@ import(
 // }
 
 /*
-	Crawls Git repository and retrieves matches with a given `channel` 
+	Crawls Git repository and retrieves matches with a given `channel`
 	This code is trash - need to fix
 */
-func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
-	setupClient()	// in order to disable SSL checking and timeout
+func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
+	setupClient() // in order to disable SSL checking and timeout
 	r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
 		URL: giturl,
 	})
@@ -63,7 +62,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 		log.Error("Git Clone Error: ", err)
 		return err
 	}
-	log.Debug("Done cloning ",giturl)
+	log.Debug("Done cloning ", giturl)
 
 	// map to avoid repeated matches
 	var matches = make(map[string]Match)
@@ -71,63 +70,63 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 	// ... just iterates over the commits, printing it
 	refIter, err := r.Branches()
 	err = refIter.ForEach(func(cref *plumbing.Reference) error {
-		log.Debug("Current Branch ",cref)
+		log.Debug("Current Branch ", cref)
 		cIter, _ := r.Log(&git.LogOptions{From: cref.Hash()})
 		err = cIter.ForEach(func(commit *object.Commit) error {
-			log.Trace("Current commit ",commit)
-			parent, err:=commit.Parent(0)							//https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/object#Commit.Parent
-			if err==nil{
+			log.Trace("Current commit ", commit)
+			parent, err := commit.Parent(0) //https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/object#Commit.Parent
+			if err == nil {
 				// stats, _ :=commit.Stats()
 				// log.Info(commit.Hash, ":",parent.Hash)
-				patch, _ :=commit.Patch(parent)						//https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#Patch
+				patch, _ := commit.Patch(parent) //https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#Patch
 
-				file_patches:=patch.FilePatches()
-				for _, p := range file_patches{						//https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#FilePatch
+				file_patches := patch.FilePatches()
+				for _, p := range file_patches { //https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#FilePatch
 					// log.Trace("Going for patch ",p)
 					if p.IsBinary() {
 						log.Trace("Found binary file, skipping")
-						continue									// might add this later with c.Opts
+						continue // might add this later with c.Opts
 					}
-					from, to :=p.Files()
-					for _, chunk := range p.Chunks(){
+					from, to := p.Files()
+					for _, chunk := range p.Chunks() {
 						scanner := bufio.NewScanner(strings.NewReader(chunk.Content()))
-						i:=1
+						i := 1
 						for scanner.Scan() {
 							line := scanner.Text()
 							log.Trace(line)
 							found := c.RegexLine(line)
 							// dumb
 							if len(found) > 0 {
-								outp:=chunk.Content()
-								for _, match := range found{
+								outp := chunk.Content()
+								for _, match := range found {
 									// match.URL=result.FileURL
-									outp=utils.HighlightWords(outp, match.Values)
+									outp = utils.HighlightWords(outp, match.Values)
 									// match.SearchResult=result
-									log.Debug("Commit:",commit.Hash)
-									log.Debug("From ",commit.Author, " ",commit.Message)
+									log.Debug("Commit:", commit.Hash)
+									log.Debug("From ", commit.Author, " ", commit.Message)
 									if from != nil {
-										match.URL=commitFileToUrl(giturl, commit.Hash.String(), from.Path(),i)
-										match.Line=match.Line
-									}else {
-										match.URL=commitFileToUrl(giturl, commit.Hash.String(), to.Path(),i)
-										match.Line=match.Line
+										match.URL = commitFileToUrl(giturl, commit.Hash.String(), from.Path(), i)
+										match.Line = match.Line
+									} else {
+										match.URL = commitFileToUrl(giturl, commit.Hash.String(), to.Path(), i)
+										match.Line = match.Line
 									}
-									match.LineNr=i
+									match.LineNr = i
 									// match.URL=fmt.Sprintf("%s/commit/%s",giturl,commit.Hash)
 									if _, ok := matches[line]; !ok {
-										matches[line]=match
-										respChan<-match
+										matches[line] = match
+										respChan <- match
 									}
 								}
 								log.Trace(outp)
 							}
-							i+=1
+							i += 1
 						}
 					}
 				}
 
 				// // /*
-				// // 	Same as above but with diff contents output only 
+				// // 	Same as above but with diff contents output only
 				// // */
 				// scanner := bufio.NewScanner(strings.NewReader(patch.String()))
 				// for scanner.Scan() {
@@ -156,7 +155,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
 	if err != nil {
 		log.Error("Error Getting Repository: ", err)
 	}
-	log.Info("Done with:",giturl)
+	log.Info("Done with:", giturl)
 	return nil
 }
 
@@ -183,75 +182,80 @@ func setupClient() {
 func commitFileToUrl(giturl string, commitHash string, file string, line int) string {
 	// why blame? because certain files don't render cleartext (i.e. .md)
 	// return fmt.Sprintf("%s/blame/%s/%s#L%d",giturl,commitHash,file,line)
-	return fmt.Sprintf("%s/blob/%s/%s#L%d",giturl,commitHash,file,line)
+	return fmt.Sprintf("%s/blob/%s/%s#L%d", giturl, commitHash, file, line)
 }
 
 func (c *crawler) DeepCrawlGithubRepo(user, repo string, respChan chan Match) {
 	users, _ := c.Github.GetRepoContributors(user, repo)
-	log.Info("Found ",len(users), " users for repo ", repo)
+	log.Info("Found ", len(users), " users for repo ", repo)
 	for _, user := range users {
 		c.DeepCrawlGithubUser(user.Name, respChan)
 	}
-	log.Warn(":::: DONE crawling users of repo ",user,"/",repo)
+	log.Warn(":::: DONE crawling users of repo ", user, "/", repo)
 }
 
 func (c *crawler) DeepCrawlBitbucketRepo(user, repo string, respChan chan Match) {
 	users, _ := c.Bitbucket.GetRepoContributors(user, repo)
-	log.Info("Found ",len(users), " users for repo ", repo)
+	log.Info("Found ", len(users), " users for repo ", repo)
 	for _, user := range users {
 		log.Trace(user.UUID)
 		c.DeepCrawlBitbucketUser(user.UUID, respChan)
 	}
-	log.Warn(":::: DONE crawling users in repo ",repo)
+	log.Warn(":::: DONE crawling users in repo ", repo)
 }
 
 func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 	// Also works for Orgs
 	repos, _ := c.Github.GetUserRepositories(org)
-	log.Info(fmt.Sprintf("Found %d repos on Org %s",len(repos), org))
+	log.Info(fmt.Sprintf("Found %d repos on Org %s", len(repos), org))
 	var crawled_users = make(map[string]entities.User)
 	for _, repo := range repos {
+		// Crawl Repo first
+		log.Info("DeepCrawling repo ", repo.GitURL)
+		c.DeepCrawl(repo.GitURL, respChan)
+
+		// Crawl it's Users
 		users, _ := c.Github.GetRepoContributors(repo.User.Name, repo.Name)
-		log.Info("Found ",len(users), " users for repo ", repo.Name)
+		log.Info("Found ", len(users), " users for repo ", repo.Name)
 
 		guard := make(chan struct{}, c.Opts.NrThreads)
 		var mutex = &sync.Mutex{}
 		for _, user := range users {
 			guard <- struct{}{}
-			go func(user entities.User,respChan chan Match) {
-					if strings.Contains(strings.ToUpper(user.Bio),strings.ToUpper(org)) {
-						log.Warn("User ", user.Name," has ",org," in his Bio")
-					}
-					if _, ok := crawled_users[user.Name]; ok{
-						<-guard
-						return // avoid deepcrawling same User twice
-					}else{
-						mutex.Lock()
-						crawled_users[user.Name]=user
-						mutex.Unlock()
-					}
-					log.Info("DeepCrawling user ", user.Name)
-					c.DeepCrawlGithubUser(user.Name, respChan)
+			go func(user entities.User, respChan chan Match) {
+				if strings.Contains(strings.ToUpper(user.Bio), strings.ToUpper(org)) {
+					log.Warn("User ", user.Name, " has ", org, " in his Bio")
+				}
+				if _, ok := crawled_users[user.Name]; ok {
 					<-guard
-			}(user,respChan)
+					return // avoid deepcrawling same User twice
+				} else {
+					mutex.Lock()
+					crawled_users[user.Name] = user
+					mutex.Unlock()
+				}
+				log.Info("DeepCrawling user ", user.Name)
+				c.DeepCrawlGithubUser(user.Name, respChan)
+				<-guard
+			}(user, respChan)
 		}
 	}
 
 	// c.DeepCrawlGithubUser(org, respChan)
-	log.Warn(":::: DONE crawling Org ",org)
+	log.Warn(":::: DONE crawling Org ", org)
 }
 
 func (c *crawler) DeepCrawlBitbucketUser(user string, respChan chan Match) {
 	repos, _ := c.Bitbucket.GetUserRepositories(user)
-	log.Info(fmt.Sprintf("Found %d repos on User %s",len(repos), user))
+	log.Info(fmt.Sprintf("Found %d repos on User %s", len(repos), user))
 	for _, repo := range repos {
 		log.Info("DeepCrawling repo ", repo.GitURL)
-		c.DeepCrawl(repo.GitURL,respChan)
+		c.DeepCrawl(repo.GitURL, respChan)
 	}
 
 	// maxGoroutines := 3
-    // guard := make(chan struct{}, maxGoroutines)
-    //
+	// guard := make(chan struct{}, maxGoroutines)
+	//
 	// for _, repo := range repos {
 	// 	guard <- struct{}{}
 	// 	go func(repoUrl string,respChan chan Match) {
@@ -261,15 +265,15 @@ func (c *crawler) DeepCrawlBitbucketUser(user string, respChan chan Match) {
 	// 	}(repo.GitURL,respChan)
 	// }
 
-	log.Warn(":::: DONE crawling repos of user ",user)
+	log.Warn(":::: DONE crawling repos of user ", user)
 }
 
 func (c *crawler) DeepCrawlGithubUser(user string, respChan chan Match) {
 	repos, _ := c.Github.GetUserRepositories(user)
-	log.Info(fmt.Sprintf("Found %d repos on User %s",len(repos), user))
+	log.Info(fmt.Sprintf("Found %d repos on User %s", len(repos), user))
 	for _, repo := range repos {
 		log.Info("DeepCrawling repo ", repo.GitURL)
-		c.DeepCrawl(repo.GitURL,respChan)
+		c.DeepCrawl(repo.GitURL, respChan)
 	}
-	log.Warn(":::: DONE crawling repos of user ",user)
+	log.Warn(":::: DONE crawling repos of user ", user)
 }

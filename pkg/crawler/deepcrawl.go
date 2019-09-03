@@ -99,6 +99,10 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
 							if len(found) > 0 {
 								outp := chunk.Content()
 								for _, match := range found {
+									if match.Rule.Type == "keys" && match.Entropy < 4.3 {
+										continue
+										log.Warn("Dismissed match ",match.Values[0], "due to entropy: ",match.Entropy)
+									}
 									// match.URL=result.FileURL
 									outp = utils.HighlightWords(outp, match.Values)
 									// match.SearchResult=result
@@ -212,7 +216,7 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 	for _, repo := range repos {
 		// Crawl Repo first
 		log.Info("DeepCrawling repo ", repo.GitURL)
-		c.DeepCrawl(repo.GitURL, respChan)
+		// c.DeepCrawl(repo.GitURL, respChan)
 
 		// Crawl it's Users
 		users, _ := c.Github.GetRepoContributors(repo.User.Name, repo.Name)

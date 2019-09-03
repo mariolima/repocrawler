@@ -177,6 +177,7 @@ func (c *crawler) compileRegexes() error {
 
 	// read rules File
 	jsonFile, err := os.Open(c.Opts.RulesFile)
+	defer jsonFile.Close()
 	if err != nil {
 		log.Error("Couldn't Open regexes file ", c.Opts.RulesFile)
 		return err
@@ -207,6 +208,7 @@ func (c *crawler) RegexLine(line string) (matches []Match) {
 				result := line
 				results[line] = Match{
 					Rule:   MatchRule{rule_type, rule},
+					Entropy:	FindEntropy(ms[0]),	//TODO setup LineEntropy and Values Entropy
 					Values: ms,
 					Line:   strings.TrimSpace(result), //TODO trim length
 				}

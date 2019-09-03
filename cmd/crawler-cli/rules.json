@@ -19,7 +19,7 @@
   "Heroku API Key": "[h|H][e|E][r|R][o|O][k|K][u|U].*[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}",
   "MailChimp API Key": "[0-9a-f]{32}-us[0-9]{1,2}",
   "Mailgun API Key": "key-[0-9a-zA-Z]{32}",
-  "Mapbox Api Key": "['\"](pk.)[0-9A-za-z]{58,}(.)[0-9A-za-z]{22}['\"]",
+  "Mapbox Api Key": "['\"](sk.)[0-9A-za-z]{58,}(.)[0-9A-za-z]{22}['\"]",
   "Meraki API Key": "[X|x]-[C|c][I|i][S|s][C|c][O|o]+-[M|m][E|e][R|r][A|a][K|k][I|i].+[:=]\\W+[0-9a-f]{40}\\W",
   "PGP private key block": "-----BEGIN PGP PRIVATE KEY BLOCK-----",
   "Password in URL": "[a-zA-Z]{3,10}://[^/\\s:@]{3,20}:[^/\\s:@]{3,20}@.{1,100}[\"'\\s]",

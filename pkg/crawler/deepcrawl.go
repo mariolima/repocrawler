@@ -69,22 +69,39 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
 
 	// ... just iterates over the commits, printing it
 	refIter, err := r.Branches()
+	if err != nil {
+		log.Fatal("Error getting branches of : ", err)
+	}
+
 	err = refIter.ForEach(func(cref *plumbing.Reference) error {
+		if err != nil {
+			log.Fatal("Error getting branches of : ", giturl, err)
+		}
 		log.Debug("Current Branch ", cref)
-		cIter, _ := r.Log(&git.LogOptions{From: cref.Hash()})
+		cIter, err := r.Log(&git.LogOptions{From: cref.Hash()})
+		if err != nil {
+			log.Fatal("Error getting commit Iterator of : ", giturl, err)
+		}
+
 		err = cIter.ForEach(func(commit *object.Commit) error {
+			if err != nil {
+				log.Fatal("Error getting commit reference of : ", giturl, err)
+			}
 			log.Trace("Current commit ", commit)
 			parent, err := commit.Parent(0) //https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/object#Commit.Parent
 			if err == nil {
 				// stats, _ :=commit.Stats()
 				// log.Info(commit.Hash, ":",parent.Hash)
-				patch, _ := commit.Patch(parent) //https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#Patch
+				patch, err := commit.Patch(parent) //https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#Patch
+				if err != nil {
+					log.Fatal("Error getting patch from commit of : ", giturl, err)
+				}
 
 				file_patches := patch.FilePatches()
 				for _, p := range file_patches { //https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#FilePatch
 					// log.Trace("Going for patch ",p)
 					if p.IsBinary() {
-						log.Trace("Found binary file, skipping")
+						log.Debug("Found binary file, skipping")
 						continue // might add this later with c.Opts
 					}
 					from, to := p.Files()
@@ -213,28 +230,30 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 	repos, _ := c.Github.GetUserRepositories(org)
 	log.Info(fmt.Sprintf("Found %d repos on Org %s", len(repos), org))
 	var crawled_users = make(map[string]entities.User)
-	for _, repo := range repos {
+	var mutex = &sync.Mutex{}
+	for i, repo := range repos {
 		// Crawl Repo first
-		log.Info("DeepCrawling repo ", repo.GitURL)
+		// log.Info("DeepCrawling repo ", repo.GitURL)
 		// c.DeepCrawl(repo.GitURL, respChan)
 
 		// Crawl it's Users
+		log.Info("Crawling users of repo [",i,"/",len(repos),"] ",repo.Name)
 		users, _ := c.Github.GetRepoContributors(repo.User.Name, repo.Name)
 		log.Info("Found ", len(users), " users for repo ", repo.Name)
 
 		guard := make(chan struct{}, c.Opts.NrThreads)
-		var mutex = &sync.Mutex{}
 		for _, user := range users {
 			guard <- struct{}{}
 			go func(user entities.User, respChan chan Match) {
 				if strings.Contains(strings.ToUpper(user.Bio), strings.ToUpper(org)) {
 					log.Warn("User ", user.Name, " has ", org, " in his Bio")
 				}
+				mutex.Lock()
 				if _, ok := crawled_users[user.Name]; ok {
 					<-guard
+					mutex.Unlock()
 					return // avoid deepcrawling same User twice
 				} else {
-					mutex.Lock()
 					crawled_users[user.Name] = user
 					mutex.Unlock()
 				}

@@ -231,11 +231,12 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 	repos, _ := c.Github.GetUserRepositories(org)
 	log.Info(fmt.Sprintf("Found %d repos on Org %s", len(repos), org))
 	var crawled_users = make(map[string]entities.User)
+	// var crawled_users = make(map[string]entities.User)
 	var mutex = &sync.Mutex{}
 	for i, repo := range repos {
 		// Crawl Repo first
-		// log.Info("DeepCrawling repo ", repo.GitURL)
-		// c.DeepCrawl(repo.GitURL, respChan)
+		log.Info("DeepCrawling repo ", repo.GitURL)
+		c.DeepCrawl(repo.GitURL, respChan)
 
 		// Crawl it's Users
 		log.Info("Crawling users of repo [",i,"/",len(repos),"] ",repo.Name)

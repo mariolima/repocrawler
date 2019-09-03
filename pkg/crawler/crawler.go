@@ -121,11 +121,12 @@ func (c *crawler) compileRegexes() error {
 				MY RULES ^_^
 			*/
 			// "Generic Key/Secret": "(?i)(key)\\s{0,1}[=:]+\\s{0,1}['\"].{1,}['\"]+\\W",		//flawed /w big oneliners - key:"down"asdasdasdas" fix
-			"Generic Secret":                "[s|S][e|E][c|C][r|R][e|E][t|T].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
-			"Generic Key/Secret": "(?i)(key)\\s{0,1}[=:]+\\s{0,1}['\"]{4,}[^\"|^']+['\"]",
+			"Generic Secret":         "[s|S][e|E][c|C][r|R][e|E][t|T].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
+			"Generic Key/Secret":     "(?i)(key|secret)\\s{0,1}[=:]+\\s{0,1}['\"][^\"']{5,}['\"]",
+			"Generic Env Key/Secret": "(?i)(key|secret)\\s{0,1}[=:]+\\s{0,1}[^'\"\\n]{4,}",
 		},
 		"critical": {
-			"Hardcoded Env Password": "(?i)(password)\\s{0,1}[=:]+\\s{0,1}[^'\"\\n]{4,}",
+			// "Hardcoded Env Password": "(?i)(password)\\s{0,1}[=:]+\\s{0,1}[^'\"\\n]{4,}",
 			"Slack Token":              "(xox[p|b|o|a]-[0-9]{12}-[0-9]{12}-[0-9]{12}-[a-z0-9]{32})",
 			"Amazon AWS Access Key ID": "AKIA[0-9A-Z]{16}",
 			"Amazon MWS Auth Token":    "amzn\\.mws\\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
@@ -138,7 +139,6 @@ func (c *crawler) compileRegexes() error {
 			"SSH (EC) private key":     "-----BEGIN EC PRIVATE KEY-----",
 			"PGP private key block":    "-----BEGIN PGP PRIVATE KEY BLOCK-----",
 			// "Auth": "\\W(Authorization:).+\\W",
-			"Generic API Key":               "[a|A][p|P][i|I][_]?[k|K][e|E][y|Y].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
 			"Google API Key":                "AIza[0-9A-Za-z\\-_]{35}",
 			"Heroku API Key":                "[h|H][e|E][r|R][o|O][k|K][u|U].*[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}",
 			"MailChimp API Key":             "[0-9a-f]{32}-us[0-9]{1,2}",
@@ -161,12 +161,12 @@ func (c *crawler) compileRegexes() error {
 			"Auth Basic":                    "(Basic )[a-zA-z0-9+=]{20,}\\S",
 			"Generic Hash Token":            "\\w+[TtOoKkEeNn]\\s{0,1}[=:]\\s{0,1}([0-9a-f]{32}|[0-9a-f]{40}|[0-9a-f]{56}|[0-9a-f]{64})\\W", //md5, sha1, sha224, sha256
 			"Generic Hash Key":              "\\w+[KkEeYy]\\s{0,1}[=:]\\s{0,1}([0-9a-f]{32}|[0-9a-f]{40}|[0-9a-f]{56}|[0-9a-f]{64})\\W",     //md5, sha1, sha224, sha256
-			"Generic UUID":					 "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\W",
+			"Generic UUID":                  "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\W",
 			"API Key":                       "\\S*[K|k][E|e][Y|y]+\\W+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
 			"Meraki API Key":                "[X|x]-[C|c][I|i][S|s][C|c][O|o]+-[M|m][E|e][R|r][A|a][K|k][I|i].+[:=]\\W+[0-9a-f]{40}\\W",
 			"Mapbox Api Key":                "['\"](sk.)[0-9A-za-z]{58,}(.)[0-9A-za-z]{22}['\"]",
 			//TODO FIX these / prob caps
-			"Hardcoded Password": "(?i)(password)\\s{0,1}[=:]+\\s{0,1}['\"][^\"|^']{4,}['\"]+\\W", //Slightly better regex for passwords
+			"Hardcoded Password":        "(?i)(password)\\s{0,1}[=:]+\\s{0,1}['\"][^\"']{4,}['\"]+\\W", //Slightly better regex for passwords
 			"Trello API Key":            "(?i)['\"]{0,1}(trello_api_key)['\"]{0,1}\\s{0,1}[:=]\\s{0,1}['\"]{0,1}[0-9a-f]{32}['\"]{0,1}\\W",
 			"Algolia API Key":           "(?i)['\"]{0,1}(x-algolia-api-key)['\"]{0,1}\\s{0,1}[:=]\\s{0,1}['\"]{0,1}[0-9a-f]{32}['\"]{0,1}\\W",
 			"Pendo Integration API Key": "(?i)['\"]{0,1}(x-pendo-integration-key)['\"]{0,1}\\s{0,1}[:=]\\s{0,1}['\"]{0,1}[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}['\"]{0,1}\\W",
@@ -209,10 +209,10 @@ func (c *crawler) RegexLine(line string) (matches []Match) {
 			if len(ms) > 0 {
 				result := line
 				results[line] = Match{
-					Rule:   MatchRule{rule_type, rule},
-					Entropy:	FindEntropy(ms[0]),	//TODO setup LineEntropy and Values Entropy
-					Values: ms,
-					Line:   strings.TrimSpace(result), //TODO trim length
+					Rule:    MatchRule{rule_type, rule},
+					Entropy: FindEntropy(ms[0]), //TODO setup LineEntropy and Values Entropy
+					Values:  ms,
+					Line:    strings.TrimSpace(result), //TODO trim length
 				}
 				// matches=append(matches,Match{
 				// 	Rule: MatchRule{ rule_type, rule },

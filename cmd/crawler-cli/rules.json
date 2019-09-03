@@ -11,13 +11,12 @@
   "Facebook Access Token": "EAACEdEose0cBA[0-9A-Za-z]+",
   "Facebook OAuth": "[f|F][a|A][c|C][e|E][b|B][o|O][o|O][k|K].*['|\"][0-9a-f]{32}['|\"]",
   "Fastly API Key": "\\W(Fastly-key)\\W*[A-Za-z0-9+=]{44,}\\W",
-  "Generic API Key": "[a|A][p|P][i|I][_]?[k|K][e|E][y|Y].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
   "Generic Hash Key": "\\w+[KkEeYy]\\s{0,1}[=:]\\s{0,1}([0-9a-f]{32}|[0-9a-f]{40}|[0-9a-f]{56}|[0-9a-f]{64})\\W",
   "Generic Hash Token": "\\w+[TtOoKkEeNn]\\s{0,1}[=:]\\s{0,1}([0-9a-f]{32}|[0-9a-f]{40}|[0-9a-f]{56}|[0-9a-f]{64})\\W",
   "Generic UUID": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\W",
   "Google API Key": "AIza[0-9A-Za-z\\-_]{35}",
   "Hardcoded Env Password": "(?i)(password)\\s{0,1}[=:]+\\s{0,1}[^'\"\\n]{4,}",
-  "Hardcoded Password": "(?i)(password)\\s{0,1}[=:]+\\s{0,1}['\"][^\"|^']{4,}['\"]+\\W",
+  "Hardcoded Password": "(?i)(password)\\s{0,1}[=:]+\\s{0,1}['\"][^\"']{4,}['\"]+\\W",
   "Heroku API Key": "[h|H][e|E][r|R][o|O][k|K][u|U].*[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}",
   "MailChimp API Key": "[0-9a-f]{32}-us[0-9]{1,2}",
   "Mailgun API Key": "key-[0-9a-zA-Z]{32}",
@@ -45,7 +44,8 @@
   "priv_keys": "(?s)(-----BEGIN (RSA|DSA|PGP|EC|) PRIVATE KEY.*END (RSA|DSA|PGP|EC|) PRIVATE KEY-----)"
  },
  "keys": {
-  "Generic Key/Secret": "(?i)(key)\\s{0,1}[=:]+\\s{0,1}['\"]{4,}[^\"|^']+['\"]",
+  "Generic Env Key/Secret": "(?i)(key|secret)\\s{0,1}[=:]+\\s{0,1}[^'\"\\n]{4,}",
+  "Generic Key/Secret": "(?i)(key|secret)\\s{0,1}[=:]+\\s{0,1}['\"][^\"']{5,}['\"]",
   "Generic Secret": "[s|S][e|E][c|C][r|R][e|E][t|T].*['|\"][0-9a-zA-Z]{32,45}['|\"]"
  },
  "keywords": {}

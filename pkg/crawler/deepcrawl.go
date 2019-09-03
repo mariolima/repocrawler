@@ -12,7 +12,6 @@ import (
 
 	"gopkg.in/src-d/go-billy.v4/memfs" //???????????????????
 
-
 	"crypto/tls"
 	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	"net/http"
@@ -61,7 +60,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
 
 	fs := memfs.New()
 	storer := memory.NewStorage()
-	r, err := git.Clone(storer,fs, &git.CloneOptions{
+	r, err := git.Clone(storer, fs, &git.CloneOptions{
 		URL: giturl,
 	})
 	if err != nil {
@@ -121,8 +120,8 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
 								outp := chunk.Content()
 								for _, match := range found {
 									if match.Rule.Type == "keys" && match.Entropy < 4.3 {
+										log.Debug("Dismissed match ", match.Values[0], "due to entropy: ", match.Entropy)
 										continue
-										log.Warn("Dismissed match ",match.Values[0], "due to entropy: ",match.Entropy)
 									}
 									// match.URL=result.FileURL
 									outp = utils.HighlightWords(outp, match.Values)
@@ -268,7 +267,7 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 		c.DeepCrawl(repo.GitURL, respChan)
 
 		// Crawl it's Users
-		log.Info("Crawling users of repo [",i,"/",len(repos),"] ",repo.Name)
+		log.Info("Crawling users of repo [", i, "/", len(repos), "] ", repo.Name)
 		users, _ := c.Github.GetRepoContributors(repo.User.Name, repo.Name)
 		log.Info("Found ", len(users), " users for repo ", repo.Name)
 

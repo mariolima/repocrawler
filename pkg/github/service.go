@@ -85,7 +85,7 @@ func (c *GitHubCrawler) SearchCode(q string, resp chan entities.SearchResult) { 
 			TextMatch:   true,
 			ListOptions: github.ListOptions{Page: page, PerPage: 100}, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
 		})
-		log.Info("Page [",page,"/",results.GetTotal()/100,"]")
+		log.Info("Page [", page, "/", results.GetTotal()/100, "]")
 
 		if err != nil {
 			log.Fatal("Error: ", err)

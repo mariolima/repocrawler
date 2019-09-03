@@ -11,7 +11,7 @@ type Match struct { //Has to be generic - TODO move to other pkg
 	Values []string
 	//Repository struct // User struct and other generic stuff
 	URL          string
-	Entropy	float64
+	Entropy      float64
 	SearchResult entities.SearchResult
 }
 

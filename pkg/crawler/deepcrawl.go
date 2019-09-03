@@ -94,7 +94,8 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
 				// log.Info(commit.Hash, ":",parent.Hash)
 				patch, err := commit.Patch(parent) //https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#Patch
 				if err != nil {
-					log.Fatal("Error getting patch from commit of : ", giturl, err)
+					log.Error("Error getting patch from commit of : ", giturl, err)
+					return err
 				}
 
 				file_patches := patch.FilePatches()

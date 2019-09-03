@@ -121,6 +121,7 @@ func (c *crawler) compileRegexes() error {
 				MY RULES ^_^
 			*/
 			// "Generic Key/Secret": "(?i)(key)\\s{0,1}[=:]+\\s{0,1}['\"].{1,}['\"]+\\W",		//flawed /w big oneliners - key:"down"asdasdasdas" fix
+			"Generic Secret":                "[s|S][e|E][c|C][r|R][e|E][t|T].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
 			"Generic Key/Secret": "(?i)(key)\\s{0,1}[=:]+\\s{0,1}['\"]{4,}[^\"|^']+['\"]",
 			"Hardcoded Password": "(?i)(password)\\s{0,1}[=:]+\\s{0,1}['\"][^\"|^']{4,}['\"]+\\W", //Slightly better regex for passwords
 		},
@@ -138,7 +139,6 @@ func (c *crawler) compileRegexes() error {
 			"PGP private key block":    "-----BEGIN PGP PRIVATE KEY BLOCK-----",
 			// "Auth": "\\W(Authorization:).+\\W",
 			"Generic API Key":               "[a|A][p|P][i|I][_]?[k|K][e|E][y|Y].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
-			"Generic Secret":                "[s|S][e|E][c|C][r|R][e|E][t|T].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
 			"Google API Key":                "AIza[0-9A-Za-z\\-_]{35}",
 			"Heroku API Key":                "[h|H][e|E][r|R][o|O][k|K][u|U].*[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}",
 			"MailChimp API Key":             "[0-9a-f]{32}-us[0-9]{1,2}",

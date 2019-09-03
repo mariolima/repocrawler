@@ -148,7 +148,7 @@ func (c *GitHubCrawler) formatUser(user *github.User) entities.User {
 	//For now
 	return entities.User{
 		Name: *user.Login,
-		Bio:  *user.Bio,
+		// Company:  *user.Company,
 	}
 }
 

@@ -10,6 +10,9 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/client"
 	"gopkg.in/src-d/go-git.v4/storage/memory"
 
+	"gopkg.in/src-d/go-billy.v4/memfs" //???????????????????
+
+
 	"crypto/tls"
 	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	"net/http"
@@ -54,8 +57,11 @@ import (
 	This code is trash - need to fix
 */
 func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
-	setupClient() // in order to disable SSL checking and timeout
-	r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
+	setupGitClient() // in order to disable SSL checking and timeout
+
+	fs := memfs.New()
+	storer := memory.NewStorage()
+	r, err := git.Clone(storer,fs, &git.CloneOptions{
 		URL: giturl,
 	})
 	if err != nil {
@@ -84,9 +90,6 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
 		}
 
 		err = cIter.ForEach(func(commit *object.Commit) error {
-			if err != nil {
-				log.Fatal("Error getting commit reference of : ", giturl, err)
-			}
 			log.Trace("Current commit ", commit)
 			parent, err := commit.Parent(0) //https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/object#Commit.Parent
 			if err == nil {
@@ -172,7 +175,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
 			}
 			return nil
 		})
-		return nil
+		return err
 	})
 	if err != nil {
 		log.Error("Error Getting Repository: ", err)
@@ -181,7 +184,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
 	return nil
 }
 
-func setupClient() {
+func setupGitClient() {
 	customClient := &http.Client{
 		// accept any certificate (might be useful for testing)
 		Transport: &http.Transport{
@@ -189,7 +192,7 @@ func setupClient() {
 		},
 
 		// 15 second timeout
-		Timeout: 10 * time.Second,
+		Timeout: 40 * time.Second,
 
 		// don't follow redirect
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -227,12 +230,38 @@ func (c *crawler) DeepCrawlBitbucketRepo(user, repo string, respChan chan Match)
 }
 
 func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
+	var crawled_users = make(map[string]entities.User)
+	var mutex = &sync.Mutex{}
+
+	users, _ := c.Github.GetOrgMembers(org)
+	log.Info("Found ", len(users), " members for org ", org)
+
+	guard := make(chan struct{}, c.Opts.NrThreads)
+	for _, user := range users {
+		guard <- struct{}{}
+		go func(user entities.User, respChan chan Match) {
+			if strings.Contains(strings.ToUpper(user.Bio), strings.ToUpper(org)) {
+				log.Warn("User ", user.Bio, " has ", org, " in his Bio")
+			}
+			mutex.Lock()
+			if _, ok := crawled_users[user.Name]; ok {
+				<-guard
+				mutex.Unlock()
+				return // avoid deepcrawling same User twice
+			} else {
+				crawled_users[user.Name] = user
+				mutex.Unlock()
+			}
+			log.Info("DeepCrawling user ", user.Name)
+			c.DeepCrawlGithubUser(user.Name, respChan)
+			<-guard
+		}(user, respChan)
+	}
+
 	// Also works for Orgs
 	repos, _ := c.Github.GetUserRepositories(org)
 	log.Info(fmt.Sprintf("Found %d repos on Org %s", len(repos), org))
-	var crawled_users = make(map[string]entities.User)
 	// var crawled_users = make(map[string]entities.User)
-	var mutex = &sync.Mutex{}
 	for i, repo := range repos {
 		// Crawl Repo first
 		log.Info("DeepCrawling repo ", repo.GitURL)
@@ -265,7 +294,6 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 			}(user, respChan)
 		}
 	}
-
 	// c.DeepCrawlGithubUser(org, respChan)
 	log.Warn(":::: DONE crawling Org ", org)
 }

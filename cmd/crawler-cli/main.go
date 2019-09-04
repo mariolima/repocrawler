@@ -7,6 +7,7 @@ import (
 
 	"fmt"
 	"github.com/mariolima/repocrawl/cmd/utils" // used to Highlight matches with colors
+	"github.com/mariolima/repocrawl/cmd/utils/webserver"
 	"github.com/mariolima/repocrawl/pkg/crawler"
 	"strings"
 )
@@ -92,6 +93,8 @@ func main() {
 		go repoCrawler.DeepCrawlBitbucketUser(*cmd_opts.BitbucketRepo, matches)
 	}
 
+	go webserver.Serve(matches)
+
 	for {
 		select {
 		case match := <-matches:
@@ -102,6 +105,7 @@ func main() {
 				repoCrawler.Notify(match)
 			}
 			utils.SaveLineToFile(line, *cmd_opts.OutputFile)
+			webserver.PushMatch(match)
 		}
 	}
 }

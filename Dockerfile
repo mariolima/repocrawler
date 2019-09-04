@@ -16,6 +16,6 @@ WORKDIR /app/cmd/crawler-cli
 
 RUN go build -o crawler .
 
-EXPOSE 8080
+EXPOSE 8090
 
 ENTRYPOINT ["./crawler"]

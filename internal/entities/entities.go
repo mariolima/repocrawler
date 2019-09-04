@@ -17,7 +17,7 @@ type Repository struct {
 
 type User struct {
 	Name string
-	Bio  string
+	Company  string
 	UUID string
 }
 

@@ -148,7 +148,7 @@ func (c *GitHubCrawler) formatUser(user *github.User) entities.User {
 	//For now
 	return entities.User{
 		Name: *user.Login,
-		// Company:  *user.Company,
+		Company:  user.GetCompany(),
 	}
 }
 
@@ -200,6 +200,20 @@ func (c *GitHubCrawler) GetUserRepositories(user string) (repos []entities.Repos
 		// page+=1
 	}
 	return repos, nil
+}
+
+func (c *GitHubCrawler) GetFollowers(user string) (users []entities.User, err error) {
+	results, _, err := c.client.Users.ListFollowers(context.Background(), user, &github.ListOptions{
+		Page: 1,
+	})
+	if err != nil {
+		log.Fatal("Error: ", err)
+		return users, nil
+	}
+	for _, user := range results {
+		users = append(users, c.formatUser(user))
+	}
+	return users, nil
 }
 
 func (c *GitHubCrawler) GetOrgMembers(org string) (users []entities.User, err error) {

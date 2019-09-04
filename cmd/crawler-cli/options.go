@@ -9,6 +9,7 @@ import (
 
 type Options struct {
 	RulesFile         *string `json:"-"`
+	OutputFile        *string `json:"-"`
 	GitUrl            *string `json:"-"`
 	GithubSearchQuery *string `json:"-"`
 	GithubRepo        *string `json:"-"`
@@ -29,6 +30,7 @@ type BitbucketCreds struct {
 
 func ParseOptions() (Options, error) {
 	options := Options{
+		OutputFile:        flag.String("o", "output.txt", "File Output for raw matches stdout"),
 		RulesFile:         flag.String("r", "rules.json", "Json file with all the regexes"),
 		GitUrl:            flag.String("git", "", "Crawls single repository given a .git Url"),
 		GithubSearchQuery: flag.String("q", "", "Search GitHub for code containing specified query and match content for secrets"),

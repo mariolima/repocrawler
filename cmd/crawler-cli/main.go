@@ -95,10 +95,13 @@ func main() {
 	for {
 		select {
 		case match := <-matches:
-			fmt.Printf("[%f] %-30s %-90s %s\n", match.Entropy, match.Rule.Regex, utils.HighlightWords(utils.TruncateString(match.Line, match.Values, 20, 500), match.Values), match.URL)
+			match_line:=utils.HighlightWords(utils.TruncateString(match.Line, match.Values, 20, 500), match.Values)
+			line:=fmt.Sprintf("[%f] %-30s %-90s %s\n", match.Entropy, match.Rule.Regex, match_line, match.URL)
+			fmt.Print(line)
 			if match.Rule.Type == "critical" {
 				repoCrawler.Notify(match)
 			}
+			utils.SaveLineToFile(line, *cmd_opts.OutputFile)
 		}
 	}
 }

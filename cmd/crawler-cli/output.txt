@@ -1,0 +1,16 @@
+[3.382291] RSA private key                [31m-----BEGIN RSA PRIVATE KEY-----[0m                                                   https://github.com/jobertabma/ground-control/blob/21cffafa9790af79ab329890fc3153bb4be05cf3/ssl/8443.pem#L1
+
+[3.828238] Hardcoded Password             admin = Account.create!(email: 'admin@admin.nl', [31mpassword: 'silgrongrunnio')[0m      https://github.com/tomdev/grunnio/blob/03a43b51094b2904e4fe97be280a0ac1ca19a003/lib/tasks/sample_data.rake#L1
+
+[3.828238] Hardcoded Password             admin = Account.create!(email: 'admin@admin.nl', [31mpassword: 'silgrongrunnio')[0m      https://github.com/tomdev/grunnio/blob/85e925c06e7ac7b1fcff53c34b52e957932f4275/db/seeds.rb#L1
+
+[3.828238] Hardcoded Password             admin = Account.create!(email: 'sebastiaan@pouyet.nl', [31mpassword: 'silgrongrunnio')[0m https://github.com/tomdev/grunnio/blob/9a6f01ace2b71ea3c1dd7369e6b53da43885389b/db/seeds.rb#L1
+
+[3.828238] Hardcoded Password             Account.create!(email: 'sebastiaan@pouyet.nl', [31mpassword: 'silgrongrunnio')[0m        https://github.com/tomdev/grunnio/blob/a82b50ae168cfa8ffb5b9c74537fa39ffc07e8ae/db/seeds.rb#L1
+
+[4.208925] Hardcoded Password             public static $auth_wrong_[31mpassword = 'Geen geldig wachtwoord!';[0m                   https://github.com/martijnrusschen/Dashboard/blob/b79dd20124df43e661c2d5ca17e247024f81df41/configuration.php#L39
+
+[4.208925] Hardcoded Password             public $auth_wrong_[31mpassword = 'Geen geldig wachtwoord!';[0m                          https://github.com/martijnrusschen/Dashboard/blob/3f518408f75117a748e953ed54da3c5c838c60ba/configuration.php#L2
+
+[3.828238] Hardcoded Password             @admin = Account.create!(email: 'admin@admin.test', [31mpassword: 'silgrongrunnio')[0m   https://github.com/tomdev/grunnio/blob/2315e32ee180b0cb0ef27915e75b53fbb45b9d6f/lib/tasks/sample_data.rake#L1
+

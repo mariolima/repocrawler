@@ -25,6 +25,8 @@ import (
 	"fmt" //TODO move funcs that use these `Sprintf` to cmd/utils
 
 	"sync"
+
+	// "os"
 )
 
 /*
@@ -62,6 +64,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
 	storer := memory.NewStorage()
 	r, err := git.Clone(storer, fs, &git.CloneOptions{
 		URL: giturl,
+		// Progress:      os.Stderr,
 	})
 	if err != nil {
 		log.Error("Git Clone Error: ", err)
@@ -174,6 +177,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
 			}
 			return nil
 		})
+		storer.DeleteLooseObject(cref.Hash())
 		return err
 	})
 	if err != nil {
@@ -239,8 +243,8 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 	for _, user := range users {
 		guard <- struct{}{}
 		go func(user entities.User, respChan chan Match) {
-			if strings.Contains(strings.ToUpper(user.Bio), strings.ToUpper(org)) {
-				log.Warn("User ", user.Bio, " has ", org, " in his Bio")
+			if strings.Contains(strings.ToUpper(user.Company), strings.ToUpper(org)) {
+				log.Warn("User ", user.Company, " has ", org, " in his Bio")
 			}
 			mutex.Lock()
 			if _, ok := crawled_users[user.Name]; ok {
@@ -275,7 +279,7 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 		for _, user := range users {
 			guard <- struct{}{}
 			go func(user entities.User, respChan chan Match) {
-				if strings.Contains(strings.ToUpper(user.Bio), strings.ToUpper(org)) {
+				if strings.Contains(strings.ToUpper(user.Company), strings.ToUpper(org)) {
 					log.Warn("User ", user.Name, " has ", org, " in his Bio")
 				}
 				mutex.Lock()

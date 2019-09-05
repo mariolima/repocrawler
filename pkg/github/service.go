@@ -227,6 +227,17 @@ func (c *GitHubCrawler) GetOrgMembers(org string) (users []entities.User, err er
 	for _, user := range results {
 		users = append(users, c.formatUser(user))
 	}
+	page:=0
+	search_results, _, err := c.client.Search.Users(context.Background(), org, &github.SearchOptions{
+			ListOptions: github.ListOptions{Page: page, PerPage: 100}, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
+	})
+	if err != nil {
+		log.Fatal("Error: ", err)
+		return users, nil
+	}
+	for _, user := range search_results.Users {
+		users = append(users, c.formatUser(&user))
+	}
 	return users, nil
 }
 

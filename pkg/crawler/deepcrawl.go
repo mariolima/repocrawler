@@ -1,7 +1,7 @@
 package crawler
 
 import (
-	"github.com/mariolima/repocrawl/cmd/utils"
+	_"github.com/mariolima/repocrawl/cmd/utils"
 	"github.com/mariolima/repocrawl/internal/entities"
 
 	"gopkg.in/src-d/go-git.v4" //It's def heavy but gets the job done - any alternatives for commit crawling?
@@ -10,7 +10,7 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/client"
 	"gopkg.in/src-d/go-git.v4/storage/memory"
 
-	"gopkg.in/src-d/go-billy.v4/memfs" //???????????????????
+	_"gopkg.in/src-d/go-billy.v4/memfs" //???????????????????
 
 	"crypto/tls"
 	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
@@ -19,7 +19,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"bufio"
+	_"bufio"
 	"strings"
 
 	"fmt" //TODO move funcs that use these `Sprintf` to cmd/utils
@@ -61,9 +61,9 @@ import (
 func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
 	// setupGitClient() // in order to disable SSL checking and timeout
 
-	fs := memfs.New()
+	// fs := memfs.New()
 	storer := memory.NewStorage()
-	r, err := git.Clone(storer, fs, &git.CloneOptions{
+	r, err := git.Clone(storer, nil, &git.CloneOptions{
 		URL: giturl,
 		// Progress:      os.Stdout,
 	})
@@ -86,179 +86,46 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
 	cIter, _ := r.CommitObjects()
 	err = cIter.ForEach(func(commit *object.Commit) error {
 		log.Trace("Current commit ", commit)
-		parent, err := commit.Parent(0) //https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/object#Commit.Parent
-		if err == nil {
-			// stats, _ :=commit.Stats()
-			// log.Info(commit.Hash, ":",parent.Hash)
-			patch, err := commit.Patch(parent) //https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#Patch
-			if err != nil {
-				log.Error("Error getting patch from commit of : ", giturl, err)
+		fIter, _ := commit.Files()
+		err = fIter.ForEach(func(cb *object.File) error {
+			if ib, _ := cb.IsBinary(); ib {
 				return err
 			}
-
-			file_patches := patch.FilePatches()
-			for _, p := range file_patches { //https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#FilePatch
-				// log.Trace("Going for patch ",p)
-				if p.IsBinary() {
-					log.Debug("Found binary file, skipping")
-					continue // might add this later with c.Opts
-				}
-				from, to := p.Files()
-				for _, chunk := range p.Chunks() {
-					scanner := bufio.NewScanner(strings.NewReader(chunk.Content()))
-					i := 1
-					for scanner.Scan() {
-						line := scanner.Text()
-						log.Trace(line)
-						found := c.RegexLine(line)
-						// dumb
-						if len(found) > 0 {
-							outp := chunk.Content()
-							for _, match := range found {
-								if match.Rule.Type == "keys" && match.Entropy < 4.3 {
-									log.Debug("Dismissed match ", match.Values[0], "due to entropy: ", match.Entropy)
-									continue
-								}
-								// match.URL=result.FileURL
-								outp = utils.HighlightWords(outp, match.Values)
-								// match.SearchResult=result
-								log.Debug("Commit:", commit.Hash)
-								log.Debug("From ", commit.Author, " ", commit.Message)
-								if from != nil {
-									match.URL = commitFileToUrl(giturl, commit.Hash.String(), from.Path(), i)
-									match.Line = match.Line
-								} else {
-									match.URL = commitFileToUrl(giturl, commit.Hash.String(), to.Path(), i)
-									match.Line = match.Line
-								}
-								match.LineNr = i
-								// match.URL=fmt.Sprintf("%s/commit/%s",giturl,commit.Hash)
-								if _, ok := matches[line]; !ok {
-									matches[line] = match
-									respChan <- match
-								}
-							}
-							log.Trace(outp)
+			lines , _ := cb.Lines()
+			for i, line := range lines{
+				log.Trace(line)
+				found := c.RegexLine(line)
+				// dumb
+				if len(found) > 0 {
+					for _, match := range found {
+						if match.Rule.Type == "keys" && match.Entropy < 4.3 {
+							log.Debug("Dismissed match ", match.Values[0], "due to entropy: ", match.Entropy)
+							continue
 						}
-						i += 1
+						// match.SearchResult=result
+						log.Debug("Commit:", commit.Hash)
+						log.Debug("From ", commit.Author, " ", commit.Message)
+						match.URL = commitFileToUrl(giturl, commit.Hash.String(), cb.Name, i+1)
+						match.LineNr = i
+						// match.URL=fmt.Sprintf("%s/commit/%s",giturl,commit.Hash)
+						if _, ok := matches[line]; !ok {
+							matches[line] = match
+							respChan <- match
+						}
 					}
 				}
 			}
-		}
-		return nil
+			return err
+		})
+		return err
 	})
+
 	refs, _ := r.References()
 	refs.ForEach(func(ref *plumbing.Reference) error {
-		storer.DeleteLooseObject(ref.Hash())
+		r.DeleteObject(ref.Hash())
 		return nil
 	})
 	return nil
-
-	// retrieves the commit history
-	// err = refIter.ForEach(func(cref *plumbing.Reference) error {
-	// 	if err != nil {
-	// 		log.Fatal("Error getting branches of : ", giturl, err)
-	// 	}
-	// 	log.Debug("Current Branch ", cref)
-	// 	cIter, err := r.Log(&git.LogOptions{From: cref.Hash()})
-	// 	if err != nil {
-	// 		log.Fatal("Error getting commit Iterator of : ", giturl, err)
-	// 	}
-    //
-	// 	err = cIter.ForEach(func(commit *object.Commit) error {
-	// 		log.Trace("Current commit ", commit)
-	// 		parent, err := commit.Parent(0) //https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/object#Commit.Parent
-	// 		if err == nil {
-	// 			// stats, _ :=commit.Stats()
-	// 			// log.Info(commit.Hash, ":",parent.Hash)
-	// 			patch, err := commit.Patch(parent) //https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#Patch
-	// 			if err != nil {
-	// 				log.Error("Error getting patch from commit of : ", giturl, err)
-	// 				return err
-	// 			}
-    //
-	// 			file_patches := patch.FilePatches()
-	// 			for _, p := range file_patches { //https://godoc.org/gopkg.in/src-d/go-git.v4/plumbing/format/diff#FilePatch
-	// 				// log.Trace("Going for patch ",p)
-	// 				if p.IsBinary() {
-	// 					log.Debug("Found binary file, skipping")
-	// 					continue // might add this later with c.Opts
-	// 				}
-	// 				from, to := p.Files()
-	// 				for _, chunk := range p.Chunks() {
-	// 					scanner := bufio.NewScanner(strings.NewReader(chunk.Content()))
-	// 					i := 1
-	// 					for scanner.Scan() {
-	// 						line := scanner.Text()
-	// 						log.Trace(line)
-	// 						found := c.RegexLine(line)
-	// 						// dumb
-	// 						if len(found) > 0 {
-	// 							outp := chunk.Content()
-	// 							for _, match := range found {
-	// 								if match.Rule.Type == "keys" && match.Entropy < 4.3 {
-	// 									log.Debug("Dismissed match ", match.Values[0], "due to entropy: ", match.Entropy)
-	// 									continue
-	// 								}
-	// 								// match.URL=result.FileURL
-	// 								outp = utils.HighlightWords(outp, match.Values)
-	// 								// match.SearchResult=result
-	// 								log.Debug("Commit:", commit.Hash)
-	// 								log.Debug("From ", commit.Author, " ", commit.Message)
-	// 								if from != nil {
-	// 									match.URL = commitFileToUrl(giturl, commit.Hash.String(), from.Path(), i)
-	// 									match.Line = match.Line
-	// 								} else {
-	// 									match.URL = commitFileToUrl(giturl, commit.Hash.String(), to.Path(), i)
-	// 									match.Line = match.Line
-	// 								}
-	// 								match.LineNr = i
-	// 								// match.URL=fmt.Sprintf("%s/commit/%s",giturl,commit.Hash)
-	// 								if _, ok := matches[line]; !ok {
-	// 									matches[line] = match
-	// 									respChan <- match
-	// 								}
-	// 							}
-	// 							log.Trace(outp)
-	// 						}
-	// 						i += 1
-	// 					}
-	// 				}
-	// 			}
-    //
-	// 			// // /*
-	// 			// // 	Same as above but with diff contents output only
-	// 			// // */
-	// 			// scanner := bufio.NewScanner(strings.NewReader(patch.String()))
-	// 			// for scanner.Scan() {
-	// 			// 	line := scanner.Text()
-	// 			// 	found := c.RegexLine(line)
-	// 			// 	// dumb
-	// 			// 	if len(found) > 0 {
-	// 			// 		// log.Debug("Found:",found)
-	// 			// 		outp:=patch.String()
-	// 			// 		for _, match := range found{
-	// 			// 			// match.URL=result.FileURL
-	// 			// 			outp=utils.HighlightWord(outp, match.Value)
-	// 			// 			// match.SearchResult=result
-	// 			// 			respChan<-match
-	// 			// 		}
-	// 			// 		log.Trace(outp) //-- too much
-	// 			// 	}
-	// 			// }
-	// 			// //log.Info(patch)
-    //
-	// 		}
-	// 		return nil
-	// 	})
-	// 	storer.DeleteLooseObject(cref.Hash())
-	// 	return err
-	// })
-	// if err != nil {
-	// 	log.Error("Error Getting Repository: ", err)
-	// }
-	// log.Info("Done with:", giturl)
-	// return nil
 }
 
 func setupGitClient() {

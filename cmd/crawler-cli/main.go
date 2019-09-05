@@ -93,7 +93,10 @@ func main() {
 		go repoCrawler.DeepCrawlBitbucketUser(*cmd_opts.BitbucketRepo, matches)
 	}
 
-	go webserver.Serve(matches)
+	if *cmd_opts.WebServer {
+		go webserver.Serve(matches)
+	}
+
 
 	for {
 		select {
@@ -105,7 +108,9 @@ func main() {
 				repoCrawler.Notify(match)
 			}
 			utils.SaveLineToFile(line, *cmd_opts.OutputFile)
-			webserver.PushMatch(match)
+			if *cmd_opts.WebServer {
+				webserver.PushMatch(match)
+			}
 		}
 	}
 }

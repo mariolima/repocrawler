@@ -121,8 +121,8 @@ func (c *crawler) compileRegexes() error {
 				MY RULES ^_^
 			*/
 			// "Generic Key/Secret": "(?i)(key)\\s{0,1}[=:]+\\s{0,1}['\"].{1,}['\"]+\\W",		//flawed /w big oneliners - key:"down"asdasdasdas" fix
-			"Generic Secret":         "[s|S][e|E][c|C][r|R][e|E][t|T].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
-			"Generic Key/Secret":     "(?i)(key|secret)\\s{0,1}[=:]+\\s{0,1}['\"][^\"']{5,}['\"]",
+			"Generic Secret":     "[s|S][e|E][c|C][r|R][e|E][t|T].*['|\"][0-9a-zA-Z]{32,45}['|\"]",
+			"Generic Key/Secret": "(?i)(key|secret)\\s{0,1}[=:]+\\s{0,1}['\"][^\"']{5,}['\"]",
 			// "Generic Env Key/Secret": "(?i)(key|secret)\\s{0,1}[=:]+\\s{0,1}[^'\"\\n]{4,}",
 		},
 		"critical": {
@@ -162,9 +162,9 @@ func (c *crawler) compileRegexes() error {
 			"Generic Hash Token":            "\\w+[TtOoKkEeNn]\\s{0,1}[=:]\\s{0,1}([0-9a-f]{32}|[0-9a-f]{40}|[0-9a-f]{56}|[0-9a-f]{64})\\W", //md5, sha1, sha224, sha256
 			"Generic Hash Key":              "\\w+[KkEeYy]\\s{0,1}[=:]\\s{0,1}([0-9a-f]{32}|[0-9a-f]{40}|[0-9a-f]{56}|[0-9a-f]{64})\\W",     //md5, sha1, sha224, sha256
 			// "Generic UUID":                  "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\W",
-			"API Key":                       "\\S*[K|k][E|e][Y|y]+\\W+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
-			"Meraki API Key":                "[X|x]-[C|c][I|i][S|s][C|c][O|o]+-[M|m][E|e][R|r][A|a][K|k][I|i].+[:=]\\W+[0-9a-f]{40}\\W",
-			"Mapbox Api Key":                "['\"](sk.)[0-9A-za-z]{58,}(.)[0-9A-za-z]{22}['\"]",
+			"API Key":        "\\S*[K|k][E|e][Y|y]+\\W+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+			"Meraki API Key": "[X|x]-[C|c][I|i][S|s][C|c][O|o]+-[M|m][E|e][R|r][A|a][K|k][I|i].+[:=]\\W+[0-9a-f]{40}\\W",
+			"Mapbox Api Key": "['\"](sk.)[0-9A-za-z]{58,}(.)[0-9A-za-z]{22}['\"]",
 			//TODO FIX these / prob caps
 			"Hardcoded Password":        "(?i)(password)\\s{0,1}[=:]+\\s{0,1}['\"][^\"']{4,}['\"]+\\W", //Slightly better regex for passwords
 			"Trello API Key":            "(?i)['\"]{0,1}(trello_api_key)['\"]{0,1}\\s{0,1}[:=]\\s{0,1}['\"]{0,1}[0-9a-f]{32}['\"]{0,1}\\W",
@@ -207,6 +207,9 @@ func (c *crawler) RegexLine(line string) (matches []Match) {
 			// matched, err := regexp.Match(regex, []byte(line))
 			ms := re.FindAllString(line, -1) //https://golang.org/pkg/regexp/#Regexp.FindAllString
 			if len(ms) > 0 {
+				if len(ms[0]) > 500 {
+					continue
+				}
 				result := line
 				results[line] = Match{
 					Rule:    MatchRule{rule_type, rule},

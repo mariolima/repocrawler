@@ -1,16 +1,15 @@
 package crawler
 
 import (
-	_"github.com/mariolima/repocrawl/cmd/utils"
+	_ "github.com/mariolima/repocrawl/cmd/utils"
 	"github.com/mariolima/repocrawl/internal/entities"
 
 	"gopkg.in/src-d/go-git.v4" //It's def heavy but gets the job done - any alternatives for commit crawling?
-	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/client"
 	"gopkg.in/src-d/go-git.v4/storage/memory"
 
-	_"gopkg.in/src-d/go-billy.v4/memfs" //???????????????????
+	_ "gopkg.in/src-d/go-billy.v4/memfs" //???????????????????
 
 	"crypto/tls"
 	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
@@ -19,13 +18,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	_"bufio"
+	_ "bufio"
 	"strings"
 
 	"fmt" //TODO move funcs that use these `Sprintf` to cmd/utils
 
 	"sync"
-
 	// "os"
 )
 
@@ -91,8 +89,8 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
 			if ib, _ := cb.IsBinary(); ib {
 				return err
 			}
-			lines , _ := cb.Lines()
-			for i, line := range lines{
+			lines, _ := cb.Lines()
+			for i, line := range lines {
 				log.Trace(line)
 				found := c.RegexLine(line)
 				// dumb
@@ -118,12 +116,6 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
 			return err
 		})
 		return err
-	})
-
-	refs, _ := r.References()
-	refs.ForEach(func(ref *plumbing.Reference) error {
-		r.DeleteObject(ref.Hash())
-		return nil
 	})
 	return nil
 }

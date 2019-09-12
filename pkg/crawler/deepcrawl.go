@@ -109,6 +109,7 @@ func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
 						if _, ok := matches[line]; !ok {
 							matches[line] = match
 							respChan <- match
+							c.PushMatch(match)
 						}
 					}
 				}

@@ -18,11 +18,17 @@ import (
 	"os"
 )
 
+type MatchServer interface {
+	Setup()
+	PushMatch(Match) error
+}
+
 type crawler struct {
-	Github     *github.GitHubCrawler
-	Bitbucket  *bitbucket.BitbucketCrawler
-	MatchRules map[string]map[string]*regexp.Regexp
-	Opts       CrawlerOpts
+	Github       *github.GitHubCrawler
+	Bitbucket    *bitbucket.BitbucketCrawler
+	MatchRules   map[string]map[string]*regexp.Regexp
+	MatchServers []MatchServer
+	Opts         CrawlerOpts
 }
 
 type CrawlerOpts struct {
@@ -52,6 +58,22 @@ func NewRepoCrawler(opts CrawlerOpts) (*crawler, error) {
 	}
 	log.Debug("Compiled Regexes Successfully")
 	return &c, nil
+}
+
+func (c *crawler) AddMatchServer(ms MatchServer) {
+	c.MatchServers = append(c.MatchServers, ms)
+	log.Warn("Starting MatchServer")
+	go ms.Setup()
+	// if err != nil {
+	// 	log.Fatal("Couldn't Match Server")
+	// }
+	// log.Warn("Started MatchServer")
+}
+
+func (c *crawler) PushMatch(match Match) {
+	for _, ms := range c.MatchServers {
+		ms.PushMatch(match)
+	}
 }
 
 func (c *crawler) GithubCodeSearch(query string, response chan Match) {

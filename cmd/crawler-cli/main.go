@@ -61,6 +61,14 @@ func main() {
 		return
 	}
 
+	if *cmd_opts.WebServer {
+		repoCrawler.AddMatchServer(&webserver.MatchServer{
+			Port:     8090,
+			Hostname: "gobh",
+			CertFile: "configs/certs/",
+		})
+	}
+
 	// Channel for Matches found
 	matches := make(chan crawler.Match)
 
@@ -93,24 +101,13 @@ func main() {
 		go repoCrawler.DeepCrawlBitbucketUser(*cmd_opts.BitbucketRepo, matches)
 	}
 
-	if *cmd_opts.WebServer {
-		go webserver.Serve(matches)
-	}
-
-
-	for {
-		select {
-		case match := <-matches:
-			match_line:=utils.HighlightWords(utils.TruncateString(match.Line, match.Values, 20, 500), match.Values)
-			line:=fmt.Sprintf("[%f] %-30s %-90s %s\n", match.Entropy, match.Rule.Regex, match_line, match.URL)
-			fmt.Print(line)
-			if match.Rule.Type == "critical" {
-				repoCrawler.Notify(match)
-			}
-			utils.SaveLineToFile(line, *cmd_opts.OutputFile)
-			if *cmd_opts.WebServer {
-				webserver.PushMatch(match)
-			}
+	for match := range matches {
+		match_line := utils.HighlightWords(utils.TruncateString(match.Line, match.Values, 20, 500), match.Values)
+		line := fmt.Sprintf("[%f] %-30s %-90s %s\n", match.Entropy, match.Rule.Regex, match_line, match.URL)
+		fmt.Print(line)
+		if match.Rule.Type == "critical" {
+			repoCrawler.Notify(match)
 		}
+		utils.SaveLineToFile(line, *cmd_opts.OutputFile)
 	}
 }

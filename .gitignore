@@ -7,7 +7,7 @@
 *.pem
 *.key
 *.backup
-.txt
+*.txt
 
 *.bolt
 

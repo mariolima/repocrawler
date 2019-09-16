@@ -28,30 +28,6 @@ import (
 )
 
 /*
-	TODO task system
-*/
-// type CrawlerTask struct{
-// 	reponseChan		chan Match
-// 	nthreads		int
-// }
-//
-// func (ct *CrawlerTask) DeepCrawl(giturl string) (error) {
-// 	//does the crawling
-// 	//blablabla
-// 	ct.responseChan<-nil
-// 	return nil
-// }
-//
-// func (c *crawler) DeepCrawl(giturl string, respChan chan Match) (error) {
-// 	// setup goroutines with c.Opts (nthreads)
-// 	// adds task to the list of Tasks in Crawler
-// 	c.AddTask(&CrawlerTask{
-// 		responseChan: respChan,
-// 	})
-// 	return nil
-// }
-
-/*
 	Crawls Git repository and retrieves matches with a given `channel`
 	This code is trash - need to fix
 */
@@ -173,16 +149,23 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 	users, _ := c.Github.GetOrgMembers(org)
 	log.Info("Found ", len(users), " members for org ", org)
 
-	guard := make(chan struct{}, c.Opts.NrThreads)
+	// guard := make(chan struct{}, c.Opts.NrThreads)
+	// users_wait := sync.WaitGroup{}
+	// wp := workerpool.New(c.Opts.NrThreads)
+	w := NewBoundedWaitGroup(c.Opts.NrThreads)
 	for _, user := range users {
-		guard <- struct{}{}
+		// guard <- struct{}{}
+		// users_wait.Add(1)
+		w.Add(1)
 		go func(user entities.User, respChan chan Match) {
+			// defer users_wait.Done()
+			defer w.Done()
 			if strings.Contains(strings.ToUpper(user.Company), strings.ToUpper(org)) {
 				log.Warn("User ", user.Company, " has ", org, " in his Bio")
 			}
 			mutex.Lock()
 			if _, ok := crawled_users[user.Name]; ok {
-				<-guard
+				// <-guard
 				mutex.Unlock()
 				return // avoid deepcrawling same User twice
 			} else {
@@ -191,47 +174,52 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 			}
 			log.Info("DeepCrawling user ", user.Name)
 			c.DeepCrawlGithubUser(user.Name, respChan)
-			<-guard
+			// <-guard
 		}(user, respChan)
 	}
+	// users_wait.Wait()
+	log.Warn("-------------------------------------------------------------------------------")
 
 	// Also works for Orgs
-	repos, _ := c.Github.GetUserRepositories(org)
-	log.Info(fmt.Sprintf("Found %d repos on Org %s", len(repos), org))
-	// var crawled_users = make(map[string]entities.User)
-	for i, repo := range repos {
-		// Crawl Repo first
-		log.Info("DeepCrawling repo ", repo.GitURL)
-		c.DeepCrawl(repo.GitURL, respChan)
-
-		// Crawl it's Users
-		log.Info("Crawling users of repo [", i, "/", len(repos), "] ", repo.Name)
-		users, _ := c.Github.GetRepoContributors(repo.User.Name, repo.Name)
-		log.Info("Found ", len(users), " users for repo ", repo.Name)
-
-		guard := make(chan struct{}, c.Opts.NrThreads)
-		for _, user := range users {
-			guard <- struct{}{}
-			go func(user entities.User, respChan chan Match) {
-				if strings.Contains(strings.ToUpper(user.Company), strings.ToUpper(org)) {
-					log.Warn("User ", user.Name, " has ", org, " in his Bio")
-				}
-				mutex.Lock()
-				if _, ok := crawled_users[user.Name]; ok {
-					<-guard
-					mutex.Unlock()
-					return // avoid deepcrawling same User twice
-				} else {
-					crawled_users[user.Name] = user
-					mutex.Unlock()
-				}
-				log.Info("DeepCrawling user ", user.Name)
-				c.DeepCrawlGithubUser(user.Name, respChan)
-				<-guard
-			}(user, respChan)
-		}
-	}
+	// repos, _ := c.Github.GetUserRepositories(org)
+	// log.Info(fmt.Sprintf("Found %d repos on Org %s", len(repos), org))
+	// // var crawled_users = make(map[string]entities.User)
+	// for i, repo := range repos {
+	// 	// Crawl Repo first
+	// 	log.Info("DeepCrawling repo ", repo.GitURL)
+	// 	c.DeepCrawl(repo.GitURL, respChan)
+	//
+	// 	// Crawl it's Users
+	// 	log.Info("Crawling users of repo [", i, "/", len(repos), "] ", repo.Name)
+	// 	users, _ := c.Github.GetRepoContributors(repo.User.Name, repo.Name)
+	// 	log.Info("Found ", len(users), " users for repo ", repo.Name)
+	//
+	// 	// guard := make(chan struct{}, c.Opts.NrThreads)
+	// 	for _, user := range users {
+	// 		// guard <- struct{}{}
+	// 		w.Add(user.Name)
+	// 		go func(user entities.User, respChan chan Match) {
+	// 			defer w.Done()
+	// 			if strings.Contains(strings.ToUpper(user.Company), strings.ToUpper(org)) {
+	// 				log.Warn("User ", user.Name, " has ", org, " in his Bio")
+	// 			}
+	// 			mutex.Lock()
+	// 			if _, ok := crawled_users[user.Name]; ok {
+	// 				// <-guard
+	// 				mutex.Unlock()
+	// 				return // avoid deepcrawling same User twice
+	// 			} else {
+	// 				crawled_users[user.Name] = user
+	// 				mutex.Unlock()
+	// 			}
+	// 			log.Info("DeepCrawling user ", user.Name)
+	// 			c.DeepCrawlGithubUser(user.Name, respChan)
+	// 			// <-guard
+	// 		}(user, respChan)
+	// 	}
+	// }
 	// c.DeepCrawlGithubUser(org, respChan)
+	w.Wait()
 	log.Warn(":::: DONE crawling Org ", org)
 }
 
@@ -259,11 +247,17 @@ func (c *crawler) DeepCrawlBitbucketUser(user string, respChan chan Match) {
 }
 
 func (c *crawler) DeepCrawlGithubUser(user string, respChan chan Match) {
+	w := NewBoundedWaitGroup(c.Opts.NrThreads)
 	repos, _ := c.Github.GetUserRepositories(user)
 	log.Info(fmt.Sprintf("Found %d repos on User %s", len(repos), user))
 	for _, repo := range repos {
+		w.Add(1)
 		log.Info("DeepCrawling repo ", repo.GitURL)
-		c.DeepCrawl(repo.GitURL, respChan)
+		go func(giturl string, respChan chan Match) {
+			defer w.Done()
+			c.DeepCrawl(giturl, respChan)
+		}(repo.GitURL, respChan)
 	}
+	w.Wait()
 	log.Warn(":::: DONE crawling repos of user ", user)
 }

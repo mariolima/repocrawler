@@ -61,6 +61,9 @@ func main() {
 		return
 	}
 
+	// repoCrawler.TestGraph()
+	// return
+
 	if *cmd_opts.WebServer {
 		repoCrawler.AddMatchServer(&webserver.MatchServer{
 			Port:     8090,

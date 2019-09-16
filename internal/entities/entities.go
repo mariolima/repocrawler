@@ -10,15 +10,15 @@ import (
 )
 
 type Repository struct {
-	GitURL string
-	Name   string
-	User   User
+	GitURL string `json:"giturl"`
+	Name   string `json:"name"`
+	User   User   `json:"user"`
 }
 
 type User struct {
-	Name string
-	Company  string
-	UUID string
+	Name    string `json:"name"`
+	Company string `json:"company"`
+	UUID    string `json:"uuid"`
 }
 
 type SearchResult struct {
@@ -29,4 +29,12 @@ type SearchResult struct {
 
 func (sr SearchResult) String() string {
 	return fmt.Sprintf("FileURL: %s\nRepository:\n\tGitURL: %s\n\tName:%s\n\tUser:%s", sr.FileURL, sr.Repository.GitURL, sr.Repository.Name, sr.Repository.User)
+}
+
+func (u User) GetName() string {
+	return u.Name
+}
+
+func (u Repository) GetName() string {
+	return u.Name
 }

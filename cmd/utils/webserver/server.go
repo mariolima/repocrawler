@@ -3,6 +3,7 @@ package webserver
 import (
 	"encoding/json"
 	"github.com/mariolima/repocrawl/pkg/crawler"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 )
@@ -36,7 +37,7 @@ type MatchData struct {
 func (ms MatchServer) PushMatch(match crawler.Match) error {
 	mg := MatchMessage{
 		Event:  MATCH,
-		Sender: "RepoCrawl",
+		Sender: ms.Hostname,
 		Content: MatchData{
 			Time: time.Now().Unix(),
 			// Data: match.Line,
@@ -45,7 +46,10 @@ func (ms MatchServer) PushMatch(match crawler.Match) error {
 	}
 	val, _ := json.Marshal(mg)
 	BroadcastData(val)
-
 	return nil
-	// DebugMsg(match.Line)
+}
+
+func (ms MatchServer) PushLogEntry(entry log.Entry) error {
+	DebugMsg(entry.Message)
+	return nil
 }

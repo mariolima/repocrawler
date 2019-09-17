@@ -20,7 +20,8 @@ import (
 
 type MatchServer interface {
 	Setup()
-	PushMatch(Match) error
+	PushMatch(Match) error        //pushes
+	PushLogEntry(log.Entry) error //pushes logrus log entry
 }
 
 type crawler struct {
@@ -57,8 +58,29 @@ func NewRepoCrawler(opts CrawlerOpts) (*crawler, error) {
 		return nil, err
 	}
 	log.Debug("Compiled Regexes Successfully")
+
+	log.AddHook(&Logger{&c})
+
 	return &c, nil
 }
+
+// HOOK for Logrus
+type Logger struct {
+	*crawler
+}
+
+func (x Logger) Fire(entry *log.Entry) error {
+	for _, ms := range x.MatchServers {
+		ms.PushLogEntry(*entry)
+	}
+	return nil
+}
+
+func (x Logger) Levels() []log.Level {
+	return log.AllLevels
+}
+
+// ---
 
 func (c *crawler) AddMatchServer(ms MatchServer) {
 	c.MatchServers = append(c.MatchServers, ms)
@@ -251,4 +273,8 @@ func (c *crawler) RegexLine(line string) (matches []Match) {
 		matches = append(matches, m)
 	}
 	return matches
+}
+
+func (c *crawler) PushLog(msg string) {
+
 }

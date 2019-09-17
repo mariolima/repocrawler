@@ -1,6 +1,8 @@
 package crawler
 
 import (
+	"github.com/mariolima/repocrawl/internal/entities"
+	log "github.com/sirupsen/logrus"
 	"sync"
 )
 
@@ -8,9 +10,12 @@ import (
 	TODO task system
 */
 type CrawlerTask struct {
-	reponseChan chan Match
-	nthreads    int
-	InnerTasks  []CrawlerTask
+	repos_wg  sync.WaitGroup
+	reposChan chan entities.Repository //control maximum number of concurrent repos being crawled
+	usersChan chan entities.User       //control maximum number of concurrent users being crawled
+	users_wg  sync.WaitGroup
+	respChan  chan Match
+	*crawler
 }
 
 // //
@@ -30,29 +35,41 @@ type CrawlerTask struct {
 // 	return nil
 // }
 
-type BoundedWaitGroup struct {
-	wg sync.WaitGroup
-	ch chan struct{}
-}
-
-func NewBoundedWaitGroup(cap int) BoundedWaitGroup {
-	return BoundedWaitGroup{ch: make(chan struct{}, cap)}
-}
-
-func (bwg *BoundedWaitGroup) Add(delta int) {
-	for i := 0; i > delta; i-- {
-		<-bwg.ch
+func (c *crawler) NewCrawlerTask(respChan chan Match) CrawlerTask {
+	return CrawlerTask{
+		reposChan: make(chan entities.Repository, c.Opts.NrThreads),
+		usersChan: make(chan entities.User, c.Opts.NrThreads),
+		respChan:  respChan,
+		crawler:   c,
 	}
-	for i := 0; i < delta; i++ {
-		bwg.ch <- struct{}{}
-	}
-	bwg.wg.Add(delta)
 }
 
-func (bwg *BoundedWaitGroup) Done() {
-	bwg.Add(-1)
+func (ct *CrawlerTask) AddRepo(repo entities.Repository) {
+	ct.reposChan <- repo
+	ct.repos_wg.Add(1)
+	log.Warn("Crawling ", repo.Name)
 }
 
-func (bwg *BoundedWaitGroup) Wait() {
-	bwg.wg.Wait()
+func (ct *CrawlerTask) AddUser(user entities.User) {
+	ct.usersChan <- user
+	ct.users_wg.Add(1)
+	log.Warn("Crawling user ", user.Name)
+}
+
+func (ct *CrawlerTask) DoneRepo(repo entities.Repository) {
+	<-ct.reposChan
+	log.Warn("DONE Crawling ", repo.Name)
+}
+
+func (ct *CrawlerTask) DoneUser(repo entities.User) {
+	<-ct.usersChan
+	log.Warn("DONE Crawling user ", repo.Name)
+}
+
+func (ct *CrawlerTask) WaitRepos() {
+	ct.repos_wg.Wait()
+}
+
+func (ct *CrawlerTask) WaitUsers() {
+	ct.users_wg.Wait()
 }

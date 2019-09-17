@@ -73,11 +73,11 @@ func (x Logger) Fire(entry *log.Entry) error {
 	for _, ms := range x.MatchServers {
 		ms.PushLogEntry(*entry)
 	}
-	return nil
+	return nil //TODO
 }
 
 func (x Logger) Levels() []log.Level {
-	return log.AllLevels
+	return log.AllLevels //TODO remove Trace
 }
 
 // ---

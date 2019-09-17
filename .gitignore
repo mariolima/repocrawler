@@ -5,6 +5,8 @@
 *.so
 *.dylib
 *.pem
+*.crt
+*.csr
 *.key
 *.backup
 *.txt

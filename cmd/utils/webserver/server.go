@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/mariolima/repocrawl/pkg/crawler"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -17,7 +18,7 @@ type MatchServer struct {
 func (ms MatchServer) Setup() {
 	go Start()
 	http.HandleFunc("/ws", WsPage)
-	panic(http.ListenAndServeTLS("gobh:8090", "/home/msclima/go/src/github.com/mariolima/repocrawl/configs/certs/server.crt", "/home/msclima/go/src/github.com/mariolima/repocrawl/configs/certs/server.key", nil))
+	panic(http.ListenAndServeTLS(fmt.Sprintf("%s:%d", ms.Hostname, ms.Port), "../../configs/certs/server.crt", "../../configs/certs/server.key", nil))
 	// TODO error handling
 }
 
@@ -51,5 +52,7 @@ func (ms MatchServer) PushMatch(match crawler.Match) error {
 
 func (ms MatchServer) PushLogEntry(entry log.Entry) error {
 	DebugMsg(entry.Message)
+	// val, _ := json.Marshal(entry)
+	// BroadcastData(val)
 	return nil
 }

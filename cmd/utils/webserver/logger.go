@@ -40,7 +40,7 @@ type Message struct {
 	Sender    string      `json:"sender,omitempty"`
 	Event     Event       `json:"event"`
 	Recipient string      `json:"recipient,omitempty"`
-	Content   ContentData `json:"data,omitempty"`
+	Content   interface{} `json:"data,omitempty"`
 	Time      int64       `json:"time"`
 }
 

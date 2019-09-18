@@ -9,7 +9,7 @@ import (
 
 type Options struct {
 	RulesFile         *string `json:"-"`
-	WebServer         *bool `json:"-"`
+	WebServer         *bool   `json:"-"`
 	OutputFile        *string `json:"-"`
 	GitUrl            *string `json:"-"`
 	GithubSearchQuery *string `json:"-"`
@@ -41,7 +41,7 @@ func ParseOptions() (Options, error) {
 		BitbucketHost:     flag.String("bitbuckethost", "https://api.bitbucket.org/2.0", "Bitbucket base API host"),
 		BitbucketRepo:     flag.String("bitbucketrepo", "", "DeepCrawls bitbucket repository and all repositories of it's contributors (format: user/repo)"),
 		BitbucketUser:     flag.String("bitbucketuser", "", "DeepCrawls all bitbucket repositories of given user"),
-		NrThreads:         flag.Int("n", 3, "Number of threads to be used during DeepCrawling"),
+		NrThreads:         flag.Int("n", 5, "Number of threads to be used during DeepCrawling"),
 		WebServer:         flag.Bool("w", false, "Run webserver page"),
 	}
 

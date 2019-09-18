@@ -22,26 +22,17 @@ func (ms MatchServer) Setup() {
 	// TODO error handling
 }
 
-type MatchMessage struct {
-	Sender    string    `json:"sender,omitempty"`
-	Event     Event     `json:"event"`
-	Recipient string    `json:"recipient,omitempty"`
-	Content   MatchData `json:"data,omitempty"`
-	Time      int64     `json:"time"`
-}
-
 type MatchData struct {
 	Time  int64         `json:"time"`
 	Match crawler.Match `json:"match,omitempty"`
 }
 
 func (ms MatchServer) PushMatch(match crawler.Match) error {
-	mg := MatchMessage{
+	mg := Message{
 		Event:  MATCH,
 		Sender: ms.Hostname,
 		Content: MatchData{
-			Time: time.Now().Unix(),
-			// Data: match.Line,
+			Time:  time.Now().Unix(),
 			Match: match,
 		},
 	}
@@ -50,9 +41,24 @@ func (ms MatchServer) PushMatch(match crawler.Match) error {
 	return nil
 }
 
+type LogData struct {
+	Time  int64  `json:"time"`
+	Level string `json:"level,omitempty"`
+	Msg   string `json:"msg,omitempty"`
+}
+
 func (ms MatchServer) PushLogEntry(entry log.Entry) error {
-	DebugMsg(entry.Message)
-	// val, _ := json.Marshal(entry)
-	// BroadcastData(val)
+	// DebugMsg(entry.Message)
+	mg := Message{
+		Event:  DEBUG,
+		Sender: ms.Hostname,
+		Content: LogData{
+			Time:  entry.Time.Unix(),
+			Level: entry.Level.String(),
+			Msg:   entry.Message,
+		},
+	}
+	val, _ := json.Marshal(mg)
+	BroadcastData(val)
 	return nil
 }

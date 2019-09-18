@@ -10,11 +10,15 @@ import (
 	TODO task system
 */
 type CrawlerTask struct {
-	repos_wg  sync.WaitGroup
-	reposChan chan entities.Repository //control maximum number of concurrent repos being crawled
-	usersChan chan entities.User       //control maximum number of concurrent users being crawled
-	users_wg  sync.WaitGroup
-	respChan  chan Match
+	//TODO move these to crawler struct instead
+	repos_wg      sync.WaitGroup
+	reposChan     chan entities.Repository //control maximum number of concurrent repos being crawled
+	usersChan     chan entities.User       //control maximum number of concurrent users being crawled
+	users_wg      sync.WaitGroup
+	respChan      chan Match
+	AnalysedRepos []entities.Repository
+	AnalysedUsers []entities.User
+
 	*crawler
 }
 
@@ -58,12 +62,14 @@ func (ct *CrawlerTask) AddUser(user entities.User) {
 
 func (ct *CrawlerTask) DoneRepo(repo entities.Repository) {
 	<-ct.reposChan
+	ct.AnalysedRepos = append(ct.AnalysedRepos, repo)
 	log.Warn("DONE Crawling ", repo.Name)
 }
 
-func (ct *CrawlerTask) DoneUser(repo entities.User) {
+func (ct *CrawlerTask) DoneUser(user entities.User) {
 	<-ct.usersChan
-	log.Warn("DONE Crawling user ", repo.Name)
+	ct.AnalysedUsers = append(ct.AnalysedUsers, user)
+	log.Warn("DONE Crawling user ", user.Name)
 }
 
 func (ct *CrawlerTask) WaitRepos() {

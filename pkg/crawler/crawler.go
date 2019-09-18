@@ -58,8 +58,8 @@ func NewRepoCrawler(opts CrawlerOpts) (*crawler, error) {
 		return nil, err
 	}
 	log.Debug("Compiled Regexes Successfully")
-
 	log.AddHook(&Logger{&c})
+	// log.SetReportCaller(true)
 
 	return &c, nil
 }
@@ -77,7 +77,7 @@ func (x Logger) Fire(entry *log.Entry) error {
 }
 
 func (x Logger) Levels() []log.Level {
-	return log.AllLevels //TODO remove Trace
+	return log.AllLevels[:len(log.AllLevels)-1] //Ignore Trace
 }
 
 // ---

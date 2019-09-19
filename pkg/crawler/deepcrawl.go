@@ -7,7 +7,10 @@ import (
 	"gopkg.in/src-d/go-git.v4" //It's def heavy but gets the job done - any alternatives for commit crawling?
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/client"
-	"gopkg.in/src-d/go-git.v4/storage/memory"
+
+	_ "gopkg.in/src-d/go-git.v4/storage/memory"
+	"io/ioutil"
+	"os"
 
 	_ "gopkg.in/src-d/go-billy.v4/memfs" //???????????????????
 
@@ -33,8 +36,18 @@ import (
 */
 
 func (ct *CrawlerTask) DeepCrawl(giturl string) error {
-	storer := memory.NewStorage()
-	r, err := git.Clone(storer, nil, &git.CloneOptions{
+	// Saving repos to Disk as a test - Prevents MEM leak
+	dir, err := ioutil.TempDir("", "repo")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+
+	// Saving repos to MEM - better performance?
+	// storer := memory.NewStorage()
+	// r, err := git.Clone(storer, nil, &git.CloneOptions{
+
+	r, err := git.PlainClone(dir, false, &git.CloneOptions{
 		URL: giturl,
 		// Progress:      os.Stdout,
 	})

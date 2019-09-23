@@ -1,15 +1,18 @@
 package crawler
 
 import (
+	"sync"
+
 	"github.com/mariolima/repocrawl/internal/entities"
 	"github.com/mariolima/repocrawl/pkg/bitbucket"
 	"github.com/mariolima/repocrawl/pkg/github"
 	_ "github.com/mariolima/repocrawl/pkg/gitlab" //TODO
 
 	"bufio"
-	log "github.com/sirupsen/logrus"
 	"regexp"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"fmt" //TODO used just to format github lines #L01
 
@@ -24,15 +27,26 @@ type MatchServer interface {
 	PushLogEntry(log.Entry) error //pushes logrus log entry
 }
 
+// crawler is not exported so that the user HAS to use the Constructor NewRepoCrawler instead of implicit
 type crawler struct {
 	Github       *github.GitHubCrawler
 	Bitbucket    *bitbucket.BitbucketCrawler
 	MatchRules   map[string]map[string]*regexp.Regexp
 	MatchServers []MatchServer
-	Opts         CrawlerOpts
+	Opts         Opts
+	Tasks        []Task // Used to organize DeepCrawler tasks - this is where the Match chan gets stored
+	workLimiters
 }
 
-type CrawlerOpts struct {
+type workLimiters struct {
+	usersChan chan entities.User //control maximum number of concurrent users being crawled
+	usersWg   sync.WaitGroup
+	reposWg   sync.WaitGroup
+	reposChan chan entities.Repository //control maximum number of concurrent repos being crawled
+}
+
+// Opts - options used by the Crawler and sent by the user in NewRepoCrawler
+type Opts struct {
 	GithubToken   string `json:"github_token,omitempty"`
 	BitbucketHost string `json:"bitbucket_host,omitempty"`
 	RulesFile     string `json:"rules_file,omitempty"`
@@ -40,11 +54,22 @@ type CrawlerOpts struct {
 	NrThreads     int    `json:"nthreads,omitempty"`
 }
 
-// type Task struct{
-// 	MatchesChannel	chan Match
+// // CrawlNewRepo queues another repo onto the Crawler
+// func (c *crawler) CrawlNewRepo(repo entities.Repository) {
+// 	c.reposChan <- repo
+// 	c.reposWg.Add(1)
 // }
 
-func NewRepoCrawler(opts CrawlerOpts) (*crawler, error) {
+// // CrawlNewRepo queues another user onto the Crawler
+// func (c *crawler) CrawlNewUser(user entities.User) {
+// 	c.usersChan <- user
+// 	c.usersWg.Add(1)
+// }
+// func (c *crawler) DoneRepo() { <-c.reposChan }
+// func (c *crawler) DoneUser() { <-c.usersChan }
+
+// NewRepoCrawler creates new crawler with specified Opts
+func NewRepoCrawler(opts Opts) (*crawler, error) {
 	//TODO depending on the opts - create only the required Clients
 	c := crawler{
 		Github:    github.NewCrawler(opts.GithubToken),
@@ -61,14 +86,19 @@ func NewRepoCrawler(opts CrawlerOpts) (*crawler, error) {
 	log.AddHook(&Logger{&c})
 	// log.SetReportCaller(true)
 
+	//Setup workLimiters
+	c.reposChan = make(chan entities.Repository, c.Opts.NrThreads)
+	c.usersChan = make(chan entities.User, c.Opts.NrThreads)
+
 	return &c, nil
 }
 
-// HOOK for Logrus
+// Logger HOOK for Logrus
 type Logger struct {
 	*crawler
 }
 
+// Fire function used in Logrus Hook https://github.com/sirupsen/logrus/blob/master/hooks.go
 func (x Logger) Fire(entry *log.Entry) error {
 	for _, ms := range x.MatchServers {
 		ms.PushLogEntry(*entry)
@@ -76,11 +106,10 @@ func (x Logger) Fire(entry *log.Entry) error {
 	return nil //TODO
 }
 
+// Levels function used in Logrus Hook
 func (x Logger) Levels() []log.Level {
 	return log.AllLevels[:len(log.AllLevels)-1] //Ignore Trace
 }
-
-// ---
 
 func (c *crawler) AddMatchServer(ms MatchServer) {
 	c.MatchServers = append(c.MatchServers, ms)

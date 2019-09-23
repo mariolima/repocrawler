@@ -14,6 +14,7 @@ require (
 	github.com/pkg/profile v1.3.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.2
+	github.com/stretchr/testify v1.3.0
 	github.com/twmb/algoimpl v0.0.0-20170717182524-076353e90b94
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	gopkg.in/src-d/go-billy.v4 v4.3.2

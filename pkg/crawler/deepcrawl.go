@@ -1,41 +1,29 @@
 package crawler
 
 import (
-	_ "github.com/mariolima/repocrawl/cmd/utils"
-	"github.com/mariolima/repocrawl/internal/entities"
-
-	"gopkg.in/src-d/go-git.v4" //It's def heavy but gets the job done - any alternatives for commit crawling?
-	"gopkg.in/src-d/go-git.v4/plumbing/object"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/client"
-
-	_ "gopkg.in/src-d/go-git.v4/storage/memory"
-	"io/ioutil"
-	"os"
-
-	_ "gopkg.in/src-d/go-billy.v4/memfs" //???????????????????
-
 	"crypto/tls"
-	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
+	"fmt" //TODO move funcs that use these `Sprintf` to cmd/utils
+	"io/ioutil"
 	"net/http"
+	"os"
+	"strings"
+	"sync"
 	"time"
 
+	"github.com/mariolima/repocrawl/internal/entities"
+	_ "gopkg.in/src-d/go-billy.v4/memfs" //???????????????????
+	"gopkg.in/src-d/go-git.v4"           //It's def heavy but gets the job done - any alternatives for commit crawling?
+	"gopkg.in/src-d/go-git.v4/plumbing/object"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport/client"
+	_ "gopkg.in/src-d/go-git.v4/storage/memory" //Used to clone into memory - not used rn
+
 	log "github.com/sirupsen/logrus"
-
-	_ "bufio"
-	"strings"
-
-	"fmt" //TODO move funcs that use these `Sprintf` to cmd/utils
-
-	"sync"
+	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	// "os"
 )
 
-/*
-	Crawls Git repository and retrieves matches with a given `channel`
-	This code is trash - need to fix
-*/
-
-func (ct *CrawlerTask) DeepCrawl(giturl string) error {
+// DeepCrawl used within Task to deepcrawl a single giturl
+func (ct *Task) DeepCrawl(giturl string) error {
 	// Saving repos to Disk as a test - Prevents MEM leak
 	dir, err := ioutil.TempDir("", "repo")
 	if err != nil {
@@ -89,7 +77,7 @@ func (ct *CrawlerTask) DeepCrawl(giturl string) error {
 						// match.SearchResult=result
 						log.Debug("Commit:", commit.Hash)
 						log.Debug("From ", commit.Author, " ", commit.Message)
-						match.URL = commitFileToUrl(giturl, commit.Hash.String(), cb.Name, i+1)
+						match.URL = commitFileToURL(giturl, commit.Hash.String(), cb.Name, i+1)
 						match.LineNr = i
 						// match.URL=fmt.Sprintf("%s/commit/%s",giturl,commit.Hash)
 						if _, ok := matches[line]; !ok {
@@ -107,9 +95,14 @@ func (ct *CrawlerTask) DeepCrawl(giturl string) error {
 	return nil
 }
 
+// DeepCrawl deepcrawls single GitURL by creating a Task with a single Repo
 func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
-	ct := c.NewCrawlerTask(respChan)
-	return ct.DeepCrawl(giturl)
+	ct := c.NewTask(respChan)
+	repo := entities.Repository{GitURL: giturl}
+	ct.AddRepo(repo)
+	err := ct.DeepCrawl(repo.GitURL)
+	ct.DoneRepo(repo)
+	return err
 }
 
 func setupGitClient() {
@@ -132,7 +125,7 @@ func setupGitClient() {
 	client.InstallProtocol("https", githttp.NewClient(customClient))
 }
 
-func commitFileToUrl(giturl string, commitHash string, file string, line int) string {
+func commitFileToURL(giturl string, commitHash string, file string, line int) string {
 	// why blame? because certain files don't render cleartext (i.e. .md)
 	// return fmt.Sprintf("%s/blame/%s/%s#L%d",giturl,commitHash,file,line)
 	return fmt.Sprintf("%s/blob/%s/%s#L%d", giturl, commitHash, file, line)
@@ -158,7 +151,7 @@ func (c *crawler) DeepCrawlBitbucketRepo(user, repo string, respChan chan Match)
 }
 
 func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
-	ct := c.NewCrawlerTask(respChan)
+	ct := c.NewTask(respChan)
 
 	var crawled_users = make(map[string]entities.User)
 	var mutex = &sync.Mutex{}
@@ -237,7 +230,7 @@ func (c *crawler) DeepCrawlBitbucketUser(user string, respChan chan Match) {
 	}
 }
 
-func (ct *CrawlerTask) DeepCrawlGithubUser(user string) {
+func (ct *Task) DeepCrawlGithubUser(user string) {
 	repos, _ := ct.Github.GetUserRepositories(user)
 	log.Info(fmt.Sprintf("Found %d repos on User %s", len(repos), user))
 	for _, repo := range repos {
@@ -250,6 +243,6 @@ func (ct *CrawlerTask) DeepCrawlGithubUser(user string) {
 }
 
 func (c *crawler) DeepCrawlGithubUser(user string, respChan chan Match) {
-	ct := c.NewCrawlerTask(respChan)
+	ct := c.NewTask(respChan)
 	ct.DeepCrawlGithubUser(user)
 }

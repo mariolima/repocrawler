@@ -3,9 +3,10 @@ package crawler
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
+
 	"github.com/mariolima/repocrawl/internal/entities"
 	_ "github.com/twmb/algoimpl/go/graph"
-	"sync"
 )
 
 type ItemGraph struct {
@@ -80,7 +81,7 @@ func (g *ItemGraph) AddEdge(n1, n2 *Node) {
 	g.lock.Unlock()
 }
 
-// AddEdge adds an edge to the graph
+// String prints str state of the ItemGraph
 func (g *ItemGraph) String() {
 	g.lock.RLock()
 	s := ""

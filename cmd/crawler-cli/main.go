@@ -106,8 +106,8 @@ func main() {
 	}
 
 	for match := range matches {
-		match_line := utils.HighlightWords(utils.TruncateString(match.Line, match.Values, 20, 500), match.Values)
-		line := fmt.Sprintf("[%f] %-30s %-90s %s\n", match.Entropy, match.Rule.Regex, match_line, match.URL)
+		matchLine := utils.HighlightWords(utils.TruncateString(match.Line, match.Values, 20, 500), match.Values)
+		line := fmt.Sprintf("[%f] %-30s %-90s %s\n", match.Entropy, match.Rule.Regex, matchLine, match.URL)
 		fmt.Print(line)
 		if match.Rule.Type == "critical" {
 			repoCrawler.Notify(match)

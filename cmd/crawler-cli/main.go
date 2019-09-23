@@ -6,10 +6,11 @@ import (
 	"github.com/pkg/profile" //profiler for debugging performance
 
 	"fmt"
+	"strings"
+
 	"github.com/mariolima/repocrawl/cmd/utils" // used to Highlight matches with colors
 	"github.com/mariolima/repocrawl/cmd/utils/webserver"
 	"github.com/mariolima/repocrawl/pkg/crawler"
-	"strings"
 )
 
 var (
@@ -48,7 +49,7 @@ func main() {
 	}
 
 	repoCrawler, err := crawler.NewRepoCrawler(
-		crawler.CrawlerOpts{
+		crawler.Opts{
 			NrThreads:     *cmd_opts.NrThreads,
 			GithubToken:   GITHUB_ACCESS_TOKEN,
 			BitbucketHost: *cmd_opts.BitbucketHost,

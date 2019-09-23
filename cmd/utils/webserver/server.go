@@ -3,18 +3,21 @@ package webserver
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mariolima/repocrawl/pkg/crawler"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
+
+	"github.com/mariolima/repocrawl/pkg/crawler"
+	log "github.com/sirupsen/logrus"
 )
 
+// MatchServer Options passed during creation
 type MatchServer struct {
 	Port     int
 	Hostname string
 	CertFile string
 }
 
+// Setup Sets up the MatchServer with it's listeners
 func (ms MatchServer) Setup() {
 	go Start()
 	http.HandleFunc("/ws", WsPage)
@@ -22,16 +25,17 @@ func (ms MatchServer) Setup() {
 	// TODO error handling
 }
 
-type MatchData struct {
+type matchData struct {
 	Time  int64         `json:"time"`
 	Match crawler.Match `json:"match,omitempty"`
 }
 
+// PushMatch Broadcasts given Match to all websocket clients
 func (ms MatchServer) PushMatch(match crawler.Match) error {
 	mg := Message{
 		Event:  MATCH,
 		Sender: ms.Hostname,
-		Content: MatchData{
+		Content: matchData{
 			Time:  time.Now().Unix(),
 			Match: match,
 		},
@@ -41,18 +45,19 @@ func (ms MatchServer) PushMatch(match crawler.Match) error {
 	return nil
 }
 
-type LogData struct {
+type logData struct {
 	Time  int64  `json:"time"`
 	Level string `json:"level,omitempty"`
 	Msg   string `json:"msg,omitempty"`
 }
 
+// PushLogEntry Broadcasts given Logrus Entry to all websocket clients
 func (ms MatchServer) PushLogEntry(entry log.Entry) error {
 	// DebugMsg(entry.Message)
 	mg := Message{
 		Event:  DEBUG,
 		Sender: ms.Hostname,
-		Content: LogData{
+		Content: logData{
 			Time:  entry.Time.Unix(),
 			Level: entry.Level.String(),
 			Msg:   entry.Message,

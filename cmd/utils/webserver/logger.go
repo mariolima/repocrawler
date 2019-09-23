@@ -2,13 +2,14 @@ package webserver
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/gorilla/websocket"
-	"github.com/satori/go.uuid"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/websocket"
+	uuid "github.com/satori/go.uuid"
 )
 
+// ClientManager Server Manager used to relay Websocket messages/chan/wait
 type ClientManager struct {
 	clients    map[*Client]bool
 	broadcast  chan []byte
@@ -16,12 +17,14 @@ type ClientManager struct {
 	unregister chan *Client
 }
 
+// Client User that successfully connects to Ws
 type Client struct {
 	id     string
 	socket *websocket.Conn
 	send   chan []byte
 }
 
+// Event sent to Clients signaling message type
 type Event string
 
 const (
@@ -31,11 +34,13 @@ const (
 	ANNOUNCE Event = "announcement"
 )
 
+// ContentData Message raw data with Timestamp
 type ContentData struct {
 	Time int64  `json:"time"`
 	Data string `json:"msg"`
 }
 
+// Message Telemetry sent to Client with arbitrary json `data`
 type Message struct {
 	Sender    string      `json:"sender,omitempty"`
 	Event     Event       `json:"event"`
@@ -58,14 +63,14 @@ func (manager *ClientManager) start() {
 			manager.clients[conn] = true
 			//jsonMessage, _ := json.Marshal(&Message{Event: DEBUG,Content: "A new socket has connected."})
 			//manager.send(jsonMessage, conn)
-			announce_msg("A new socket has connected", conn)
+			announceMsg("A new socket has connected", conn)
 		case conn := <-manager.unregister:
 			if _, ok := manager.clients[conn]; ok {
 				close(conn.send)
 				delete(manager.clients, conn)
 				//jsonMessage, _ := json.Marshal(&Message{Event: DEBUG, Content: "A socket has disconnected."})
 				//manager.send(jsonMessage, conn)
-				announce_msg("A socket has disconnected", conn)
+				announceMsg("A socket has disconnected", conn)
 			}
 		case message := <-manager.broadcast:
 			for conn := range manager.clients {
@@ -80,6 +85,7 @@ func (manager *ClientManager) start() {
 	}
 }
 
+// Send sends Raw data to all clients except the one given
 func (manager *ClientManager) Send(message []byte, ignore *Client) {
 	for conn := range manager.clients {
 		if conn != ignore {
@@ -135,6 +141,7 @@ func (c *Client) write() {
 	}
 }
 
+// WsPage Websocket page handler
 func WsPage(res http.ResponseWriter, req *http.Request) {
 	conn, error := (&websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}).Upgrade(res, req, nil)
 	if error != nil {
@@ -152,12 +159,13 @@ func WsPage(res http.ResponseWriter, req *http.Request) {
 
 const server string = "RepoCrawl"
 
+// Start starts Ws server
 func Start() {
 	manager.start()
 }
 
+// DebugMsg Broadcast msg of the type DEBUG
 func DebugMsg(msg string) {
-	fmt.Sprintf("[DEBUG] %s", msg)
 	mg := Message{
 		Event:  DEBUG,
 		Sender: server,
@@ -172,11 +180,13 @@ func DebugMsg(msg string) {
 	manager.Send(val, nil)
 }
 
+// BroadcastData Broadcasts array of bytes to all Ws clients
 func BroadcastData(message []byte) {
 	manager.Send(message, nil)
 }
 
-func announce_msg(msg string, ignore *Client) {
+// announceMsg Broadcasts Message struct  to all clients except the given Ignored one
+func announceMsg(msg string, ignore *Client) {
 	mg := Message{
 		Event:  ANNOUNCE,
 		Sender: server,

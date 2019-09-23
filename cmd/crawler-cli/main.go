@@ -28,14 +28,14 @@ func main() {
 	}
 	log.SetLevel(level)
 
-	cmd_opts, err := ParseOptions()
+	cmdOpts, err := ParseOptions()
 	if err != nil {
 		log.Fatal("Cmd options Error: ", err)
 		return
 	}
 
 	log.WithFields(log.Fields{
-		"opts": cmd_opts,
+		"opts": cmdOpts,
 	}).Info("Got Opts:")
 
 	if GITHUB_ACCESS_TOKEN = getEnv("GITHUB_ACCESS_TOKEN", ""); GITHUB_ACCESS_TOKEN == "" {
@@ -50,10 +50,10 @@ func main() {
 
 	repoCrawler, err := crawler.NewRepoCrawler(
 		crawler.Opts{
-			NrThreads:     *cmd_opts.NrThreads,
+			NrThreads:     *cmdOpts.NrThreads,
 			GithubToken:   GITHUB_ACCESS_TOKEN,
-			BitbucketHost: *cmd_opts.BitbucketHost,
-			RulesFile:     *cmd_opts.RulesFile,
+			BitbucketHost: *cmdOpts.BitbucketHost,
+			RulesFile:     *cmdOpts.RulesFile,
 			SlackWebhook:  SLACK_WEBHOOK,
 		},
 	)
@@ -65,7 +65,7 @@ func main() {
 	// repoCrawler.TestGraph()
 	// return
 
-	if *cmd_opts.WebServer {
+	if *cmdOpts.WebServer {
 		repoCrawler.AddMatchServer(&webserver.MatchServer{
 			Port:     8090,
 			Hostname: "gobh",
@@ -76,33 +76,33 @@ func main() {
 	// Channel for Matches found
 	matches := make(chan crawler.Match)
 
-	if *cmd_opts.GitUrl != "" {
-		go repoCrawler.DeepCrawl(*cmd_opts.GitUrl, matches)
+	if *cmdOpts.GitURL != "" {
+		go repoCrawler.DeepCrawl(*cmdOpts.GitURL, matches)
 	}
 
-	if *cmd_opts.GithubSearchQuery != "" {
-		go repoCrawler.GithubCodeSearch(*cmd_opts.GithubSearchQuery, matches)
+	if *cmdOpts.GithubSearchQuery != "" {
+		go repoCrawler.GithubCodeSearch(*cmdOpts.GithubSearchQuery, matches)
 	}
 
-	if *cmd_opts.GithubRepo != "" && strings.Contains(*cmd_opts.GithubRepo, "/") {
-		repo := strings.Split(*cmd_opts.GithubRepo, "/")
+	if *cmdOpts.GithubRepo != "" && strings.Contains(*cmdOpts.GithubRepo, "/") {
+		repo := strings.Split(*cmdOpts.GithubRepo, "/")
 		go repoCrawler.DeepCrawlGithubRepo(repo[0], repo[1], matches)
 	}
 
-	if *cmd_opts.GithubUser != "" {
-		go repoCrawler.DeepCrawlGithubUser(*cmd_opts.GithubUser, matches)
+	if *cmdOpts.GithubUser != "" {
+		go repoCrawler.DeepCrawlGithubUser(*cmdOpts.GithubUser, matches)
 	}
 
-	if *cmd_opts.GithubOrg != "" {
-		go repoCrawler.DeepCrawlGithubOrg(*cmd_opts.GithubOrg, matches)
+	if *cmdOpts.GithubOrg != "" {
+		go repoCrawler.DeepCrawlGithubOrg(*cmdOpts.GithubOrg, matches)
 	}
 
-	if *cmd_opts.BitbucketUser != "" {
-		go repoCrawler.DeepCrawlBitbucketUser(*cmd_opts.BitbucketUser, matches)
+	if *cmdOpts.BitbucketUser != "" {
+		go repoCrawler.DeepCrawlBitbucketUser(*cmdOpts.BitbucketUser, matches)
 	}
 
-	if *cmd_opts.BitbucketRepo != "" {
-		go repoCrawler.DeepCrawlBitbucketUser(*cmd_opts.BitbucketRepo, matches)
+	if *cmdOpts.BitbucketRepo != "" {
+		go repoCrawler.DeepCrawlBitbucketUser(*cmdOpts.BitbucketRepo, matches)
 	}
 
 	for match := range matches {
@@ -112,6 +112,6 @@ func main() {
 		if match.Rule.Type == "critical" {
 			repoCrawler.Notify(match)
 		}
-		utils.SaveLineToFile(line, *cmd_opts.OutputFile)
+		utils.SaveLineToFile(line, *cmdOpts.OutputFile)
 	}
 }

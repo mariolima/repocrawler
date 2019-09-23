@@ -7,11 +7,12 @@ import (
 	"os"
 )
 
+// Options Used for the Flags given to the CLI application
 type Options struct {
 	RulesFile         *string `json:"-"`
 	WebServer         *bool   `json:"-"`
 	OutputFile        *string `json:"-"`
-	GitUrl            *string `json:"-"`
+	GitURL            *string `json:"-"`
 	GithubSearchQuery *string `json:"-"`
 	GithubRepo        *string `json:"-"`
 	GithubUser        *string `json:"-"`
@@ -24,16 +25,18 @@ type Options struct {
 	BitbucketCreds    *BitbucketCreds
 }
 
+// BitbucketCreds Used to pass Bitbucket credentials if needed
 type BitbucketCreds struct {
 	Username *string `json:"-"`
 	Password *string `json:"-"`
 }
 
+// ParseOptions Given Options struct, parses the CLI options and gives them default values
 func ParseOptions() (Options, error) {
 	options := Options{
 		OutputFile:        flag.String("o", "output.txt", "File Output for raw matches stdout"),
 		RulesFile:         flag.String("r", "rules.json", "Json file with all the regexes"),
-		GitUrl:            flag.String("git", "", "Crawls single repository given a .git Url"),
+		GitURL:            flag.String("git", "", "Crawls single repository given a .git Url"),
 		GithubSearchQuery: flag.String("q", "", "Search GitHub for code containing specified query and match content for secrets"),
 		GithubRepo:        flag.String("githubrepo", "", "DeepCrawls github repository and all repositories of it's contributors (format: user/repo)"),
 		GithubUser:        flag.String("githubuser", "", "DeepCrawls all github repositories of given user"),

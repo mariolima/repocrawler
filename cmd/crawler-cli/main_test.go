@@ -1,3 +1,4 @@
+// Test - Deepcrawls an Org and waits for first Match - checks if match is consistent
 package main
 
 import (
@@ -21,10 +22,11 @@ func TestMain(t *testing.T) {
 
 	log.SetLevel(log.DebugLevel)
 
-	gitURL := "https://github.com/fsubal/TwitKJ_New"
+	// gitURL := "https://github.com/fsubal/TwitKJ_New"
+	org := "semmle"
 
 	if GITHUB_ACCESS_TOKEN = getEnv("GITHUB_ACCESS_TOKEN", ""); GITHUB_ACCESS_TOKEN == "" {
-		log.Fatal("Please 'export GITHUB_ACCESS_TOKEN' first")
+		log.Fatal("Test Please 'export GITHUB_ACCESS_TOKEN' first")
 		return
 	}
 
@@ -50,7 +52,8 @@ func TestMain(t *testing.T) {
 
 	// Channel for Matches found
 	matches := make(chan crawler.Match)
-	go repoCrawler.DeepCrawl(gitURL, matches)
+	// go repoCrawler.DeepCrawl(gitURL, matches)
+	go repoCrawler.DeepCrawlGithubOrg(org, matches)
 
 	for match := range matches {
 		matchLine := utils.HighlightWords(utils.TruncateString(match.Line, match.Values, 20, 500), match.Values)
@@ -59,9 +62,13 @@ func TestMain(t *testing.T) {
 		if match.Rule.Type == "critical" {
 			repoCrawler.Notify(match)
 		}
-		fmt.Println(match.Line)
-		assert.Equal(t, match.Line, `define("CONSUMER_SECRET","lEFZGpHMI1OpVVHH02mJQCIsvnMfjikVr7L3l2TnBo");`)
+		// Used for gitURL
+		// assert.Equal(t, match.Line, `define("CONSUMER_SECRET","lEFZGpHMI1OpVVHH02mJQCIsvnMfjikVr7L3l2TnBo");`)
+
+		// Used for org Semmle
+		assert.Contains(t, match.URL, "https://github.com/Semmle/")
+		// assert.Equal(t, match.Line, `public static final String PLUGIN_KEY = "com.semmle.lgtm-jira-addon";`)
+
 		return
-		// utils.SaveLineToFile(line, *cmd_opts.OutputFile)
 	}
 }

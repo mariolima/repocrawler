@@ -4,7 +4,7 @@ import (
 	"math"
 )
 
-// shannonEntropy - https://www.reddit.com/r/dailyprogrammer/comments/4fc896/20160418_challenge_263_easy_calculating_shannon/d2e1wr1/
+// FindEntropy shannonEntropy - https://www.reddit.com/r/dailyprogrammer/comments/4fc896/20160418_challenge_263_easy_calculating_shannon/d2e1wr1/
 func FindEntropy(input string) float64 {
 	charMap := make(map[rune]int)
 	for _, c := range input {

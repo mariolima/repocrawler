@@ -6,17 +6,19 @@ import (
 	"sync"
 
 	"github.com/mariolima/repocrawl/internal/entities"
-	_ "github.com/twmb/algoimpl/go/graph"
+	_ "github.com/twmb/algoimpl/go/graph" // Graph library /w most of Algos and Structs
 )
 
+// ItemGraph - Graph used to correlate repositories and users throughout the crawling
 type ItemGraph struct {
-	nodes []*Node          `json:"nodes"`
-	edges map[Node][]*Node `json:"edges"`
+	Nodes []*Node          `json:"nodes"`
+	Edges map[Node][]*Node `json:"edges"`
 	lock  sync.RWMutex
 }
 
+// Node in graph
 type Node struct {
-	ntype string `json:"type"`
+	Ntype string `json:"type"`
 	Item
 }
 
@@ -24,6 +26,7 @@ func (n *Node) String() string {
 	return n.GetName()
 }
 
+// Item - Graph item
 type Item interface {
 	GetName() string
 }
@@ -55,29 +58,31 @@ func fillGraph() {
 func (c *crawler) TestGraph() {
 	fillGraph()
 	g.String()
-	val, _ := json.Marshal(g.nodes)
+	val, _ := json.Marshal(g.Nodes)
 	fmt.Println(val)
 	// _ = ioutil.WriteFile("graph.json", val, 0644)
 }
 
-func (c *ItemGraph) AddRepositoryToUser(repo entities.Repository, user entities.User) {
+// AddRepositoryToUser marks repo belonging to specified user within the Graph
+func (g *ItemGraph) AddRepositoryToUser(repo entities.Repository, user entities.User) {
 
 }
 
+// AddNode adds node to the Graph
 func (g *ItemGraph) AddNode(n *Node) {
 	g.lock.Lock()
-	g.nodes = append(g.nodes, n)
+	g.Nodes = append(g.Nodes, n)
 	g.lock.Unlock()
 }
 
 // AddEdge adds an edge to the graph
 func (g *ItemGraph) AddEdge(n1, n2 *Node) {
 	g.lock.Lock()
-	if g.edges == nil {
-		g.edges = make(map[Node][]*Node)
+	if g.Edges == nil {
+		g.Edges = make(map[Node][]*Node)
 	}
-	g.edges[*n1] = append(g.edges[*n1], n2)
-	g.edges[*n2] = append(g.edges[*n2], n1)
+	g.Edges[*n1] = append(g.Edges[*n1], n2)
+	g.Edges[*n2] = append(g.Edges[*n2], n1)
 	g.lock.Unlock()
 }
 
@@ -85,9 +90,9 @@ func (g *ItemGraph) AddEdge(n1, n2 *Node) {
 func (g *ItemGraph) String() {
 	g.lock.RLock()
 	s := ""
-	for i := 0; i < len(g.nodes); i++ {
-		s += g.nodes[i].String() + " -> "
-		near := g.edges[*g.nodes[i]]
+	for i := 0; i < len(g.Nodes); i++ {
+		s += g.Nodes[i].String() + " -> "
+		near := g.Edges[*g.Nodes[i]]
 		for j := 0; j < len(near); j++ {
 			s += near[j].String() + " "
 		}

@@ -153,7 +153,7 @@ func (c *crawler) DeepCrawlBitbucketRepo(user, repo string, respChan chan Match)
 func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 	ct := c.NewTask(respChan)
 
-	var crawled_users = make(map[string]entities.User)
+	var crawledUsers = make(map[string]entities.User)
 	var mutex = &sync.Mutex{}
 
 	users, _ := c.Github.GetOrgMembers(org)
@@ -169,13 +169,12 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 				log.Warn("User ", user.Company, " has ", org, " in his Bio")
 			}
 			mutex.Lock()
-			if _, ok := crawled_users[user.Name]; ok {
+			if _, ok := crawledUsers[user.Name]; ok {
 				mutex.Unlock()
 				return // avoid deepcrawling same User twice
-			} else {
-				crawled_users[user.Name] = user
-				mutex.Unlock()
 			}
+			crawledUsers[user.Name] = user
+			mutex.Unlock()
 			ct.DeepCrawlGithubUser(user.Name)
 		}(user, respChan)
 	}
@@ -204,14 +203,13 @@ func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
 					log.Warn("User ", user.Name, " has ", org, " in his Bio")
 				}
 				mutex.Lock()
-				if _, ok := crawled_users[user.Name]; ok {
+				if _, ok := crawledUsers[user.Name]; ok {
 					// <-guard
 					mutex.Unlock()
 					return // avoid deepcrawling same User twice
-				} else {
-					crawled_users[user.Name] = user
-					mutex.Unlock()
 				}
+				crawledUsers[user.Name] = user
+				mutex.Unlock()
 				ct.DeepCrawlGithubUser(user.Name)
 			}(user, respChan)
 		}
@@ -230,6 +228,7 @@ func (c *crawler) DeepCrawlBitbucketUser(user string, respChan chan Match) {
 	}
 }
 
+// DeepCrawlGithubUser Deepcrawls all Repositories found in which given user has contributed to
 func (ct *Task) DeepCrawlGithubUser(user string) {
 	repos, _ := ct.Github.GetUserRepositories(user)
 	log.Info(fmt.Sprintf("Found %d repos on User %s", len(repos), user))

@@ -21,6 +21,7 @@ import (
 	"os"
 )
 
+// MatchServer Iterface used for services that provide a live visual representation of the found Matches (i.e Webserver/REST/Slack)
 type MatchServer interface {
 	Setup()
 	PushMatch(Match) error        //pushes
@@ -158,7 +159,7 @@ func (c *crawler) GithubCodeSearch(query string, response chan Match) {
 						response <- match
 					}
 				}
-				i += 1
+				i++
 			}
 		}
 	}
@@ -262,10 +263,10 @@ func (c *crawler) compileRegexes() error {
 
 	//Retarded code - fix later ?
 	c.MatchRules = map[string]map[string]*regexp.Regexp{}
-	for rule_type, regexes := range rules {
-		c.MatchRules[rule_type] = make(map[string]*regexp.Regexp)
+	for ruleType, regexes := range rules {
+		c.MatchRules[ruleType] = make(map[string]*regexp.Regexp)
 		for rule, regex := range regexes {
-			c.MatchRules[rule_type][rule] = regexp.MustCompile(regex)
+			c.MatchRules[ruleType][rule] = regexp.MustCompile(regex)
 			// log.Trace(c.MatchRules[rule_type][rule])
 		}
 	}
@@ -275,7 +276,7 @@ func (c *crawler) compileRegexes() error {
 func (c *crawler) RegexLine(line string) (matches []Match) {
 	results := make(map[string]Match) // map of matches in order to avoid duplicates with the same Rules
 	// prioratizes later Regexes (more critical)
-	for rule_type, regexes := range c.MatchRules {
+	for ruleType, regexes := range c.MatchRules {
 		for rule, re := range regexes {
 			// matched, err := regexp.Match(regex, []byte(line))
 			ms := re.FindAllString(line, -1) //https://golang.org/pkg/regexp/#Regexp.FindAllString
@@ -285,7 +286,7 @@ func (c *crawler) RegexLine(line string) (matches []Match) {
 				}
 				result := line
 				results[line] = Match{
-					Rule:    MatchRule{rule_type, rule},
+					Rule:    MatchRule{ruleType, rule},
 					Entropy: FindEntropy(ms[0]), //TODO setup LineEntropy and Values Entropy
 					Values:  ms,
 					Line:    strings.TrimSpace(result), //TODO trim length

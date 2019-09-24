@@ -28,7 +28,7 @@ type Client struct {
 type Event string
 
 const (
-	DEBUG    Event = "debug"
+	DEBUG    Event = "debug" // DEBUG state
 	MATCH    Event = "match"
 	WARNING  Event = "warning"
 	ANNOUNCE Event = "announcement"

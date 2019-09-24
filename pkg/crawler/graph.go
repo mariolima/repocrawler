@@ -22,6 +22,7 @@ type Node struct {
 	Item
 }
 
+// String returns Node in str format
 func (n *Node) String() string {
 	return n.GetName()
 }

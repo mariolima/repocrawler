@@ -10,30 +10,12 @@ type Task struct {
 	respChan      chan Match
 	AnalysedRepos []entities.Repository
 	AnalysedUsers []entities.User
+	Graph         ItemGraph
 	*crawler
 }
 
-// //
-// func (ct *Task) DeepCrawl(giturl string) error {
-// 	//does the crawling
-// 	//blablabla
-// 	ct.responseChan <- nil
-// 	return nil
-// }
-
-// func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
-// 	// setup goroutines with c.Opts (nthreads)
-// 	// adds task to the list of Tasks in Crawler
-// 	c.AddTask(&Task{
-// 		responseChan: respChan,
-// 	})
-// 	return nil
-// }
-
-func (c *crawler) NewTask(respChan chan Match) Task {
+func (c *crawler) NewTask(respChan chan Match, root string) Task {
 	t := Task{
-		// c.UsersChan: make(chan entities.Repository, c.Opts.NrThreads),
-		// usersChan:   make(chan entities.User, c.Opts.NrThreads),
 		respChan: respChan,
 		crawler:  c,
 	}
@@ -72,6 +54,11 @@ func (ct *Task) DoneUser(user entities.User) {
 	<-ct.usersChan
 	ct.AnalysedUsers = append(ct.AnalysedUsers, user)
 	log.Warn("DONE Crawling user ", user.Name)
+}
+
+// Done Checks if current CrawlerTask is done
+func (ct *Task) Done() bool {
+	return true
 }
 
 // WaitRepos waits for all the Repos present in the Task to be completed

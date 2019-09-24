@@ -6,11 +6,10 @@ import (
 
 // Match Secret found while crawling a repository
 type Match struct { //Has to be generic - TODO move to other pkg
-	Rule   MatchRule
-	Line   string
-	LineNr int
-	Values []string
-	//Repository struct // User struct and other generic stuff
+	Rule         MatchRule
+	Line         string
+	LineNr       int
+	Values       []string
 	URL          string
 	Entropy      float64
 	SearchResult entities.SearchResult

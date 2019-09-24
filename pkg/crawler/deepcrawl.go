@@ -97,7 +97,7 @@ func (ct *Task) DeepCrawl(giturl string) error {
 
 // DeepCrawl deepcrawls single GitURL by creating a Task with a single Repo
 func (c *crawler) DeepCrawl(giturl string, respChan chan Match) error {
-	ct := c.NewTask(respChan)
+	ct := c.NewTask(respChan, giturl)
 	repo := entities.Repository{GitURL: giturl}
 	ct.AddRepo(repo)
 	err := ct.DeepCrawl(repo.GitURL)
@@ -151,7 +151,7 @@ func (c *crawler) DeepCrawlBitbucketRepo(user, repo string, respChan chan Match)
 }
 
 func (c *crawler) DeepCrawlGithubOrg(org string, respChan chan Match) {
-	ct := c.NewTask(respChan)
+	ct := c.NewTask(respChan, org)
 
 	var crawledUsers = make(map[string]entities.User)
 	var mutex = &sync.Mutex{}
@@ -242,6 +242,6 @@ func (ct *Task) DeepCrawlGithubUser(user string) {
 }
 
 func (c *crawler) DeepCrawlGithubUser(user string, respChan chan Match) {
-	ct := c.NewTask(respChan)
+	ct := c.NewTask(respChan, user)
 	ct.DeepCrawlGithubUser(user)
 }

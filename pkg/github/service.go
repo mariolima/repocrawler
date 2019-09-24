@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+
 	"github.com/google/go-github/github" //multiple crawling methods need most of these functions
 	"golang.org/x/oauth2"                //retarded to use this just to inject a fucking Auth header
 
@@ -10,19 +11,21 @@ import (
 	"github.com/mariolima/repocrawl/internal/entities" //structs common in GitHub/GitLab/BitBucket - RepoData/UserData etc
 )
 
+// GitHubCrawler Contains API_KEY and Client for API calls
 type GitHubCrawler struct {
 	API_KEY string
 	client  *github.Client
 }
 
-func NewCrawler(api_key string) *GitHubCrawler {
-	return &GitHubCrawler{api_key, setupClient(api_key)}
+// NewCrawler Constructs a new GitHubCrawler given an API_KEY
+func NewCrawler(apiKey string) *GitHubCrawler {
+	return &GitHubCrawler{apiKey, setupClient(apiKey)}
 }
 
-func setupClient(GITHUB_ACCESS_TOKEN string) *github.Client {
+func setupClient(githubAccessToken string) *github.Client {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: GITHUB_ACCESS_TOKEN},
+		&oauth2.Token{AccessToken: githubAccessToken},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
@@ -47,25 +50,26 @@ func (c *GitHubCrawler) getResultContent(result github.CodeResult) (string, erro
 		"*result.Path":             *result.Path,
 	}).Debug("GetContents params")
 
-	repo_content, _, _, err := c.client.Repositories.GetContents(context.Background(), *result.Repository.Owner.Login, *result.Repository.Name, *result.Path, nil)
+	repoContent, _, _, err := c.client.Repositories.GetContents(context.Background(), *result.Repository.Owner.Login, *result.Repository.Name, *result.Path, nil)
 	if err != nil {
 		log.Fatal("Error: ", err)
 		return "", err
 	}
 	log.WithFields(log.Fields{
-		"Size": *repo_content.Size,
-		"Name": *repo_content.Name,
-		"Path": *repo_content.Path,
+		"Size": *repoContent.Size,
+		"Name": *repoContent.Name,
+		"Path": *repoContent.Path,
 	}).Debug("Repo_content")
 	//https://github.com/google/go-github/blob/master/github/repos_contents.go#L23
-	file_content, err := repo_content.GetContent()
+	fileContent, err := repoContent.GetContent()
 	if err != nil {
 		log.Fatal("Error: %v\n", err)
 		return "", err
 	}
-	return file_content, nil
+	return fileContent, nil
 }
 
+// SearchCode Searches for code String in all of GitHub and streams a channel of SearchResults
 func (c *GitHubCrawler) SearchCode(q string, resp chan entities.SearchResult) { //https://godoc.org/github.com/google/go-github/github#CodeResult
 	//https://github.com/google/go-github/blob/master/github/repos_contents.go#L23
 	//-----
@@ -105,7 +109,7 @@ func (c *GitHubCrawler) SearchCode(q string, resp chan entities.SearchResult) { 
 				"Description": result.Repository.GetDescription(),
 			}).Debug("Result:")
 			// c.crawlResult(result, line_res)
-			file_content, err := c.getResultContent(result)
+			fileContent, err := c.getResultContent(result)
 			if err != nil {
 				log.Fatal("Error: ", err)
 				return
@@ -114,7 +118,7 @@ func (c *GitHubCrawler) SearchCode(q string, resp chan entities.SearchResult) { 
 			resp <- entities.SearchResult{
 				Repository:  c.formatRepo(result.GetRepository()),
 				FileURL:     *result.HTMLURL,
-				FileContent: file_content,
+				FileContent: fileContent,
 			}
 		}
 		if rsp.NextPage == 0 {
@@ -152,6 +156,7 @@ func (c *GitHubCrawler) formatUser(user *github.User) entities.User {
 	}
 }
 
+// GetUserRepositories Fetches a List of Repositories from a given Username
 func (c *GitHubCrawler) GetUserRepositories(user string) (repos []entities.Repository, err error) {
 	page := 0
 
@@ -202,6 +207,7 @@ func (c *GitHubCrawler) GetUserRepositories(user string) (repos []entities.Repos
 	return repos, nil
 }
 
+// GetFollowers Fetches a list of Users following given user
 func (c *GitHubCrawler) GetFollowers(user string) (users []entities.User, err error) {
 	results, _, err := c.client.Users.ListFollowers(context.Background(), user, &github.ListOptions{
 		Page: 1,
@@ -216,6 +222,7 @@ func (c *GitHubCrawler) GetFollowers(user string) (users []entities.User, err er
 	return users, nil
 }
 
+// GetOrgMembers Fetches a list of Users belonging to a given Organization string
 func (c *GitHubCrawler) GetOrgMembers(org string) (users []entities.User, err error) {
 	results, _, err := c.client.Organizations.ListMembers(context.Background(), org, &github.ListMembersOptions{
 		PublicOnly: true,
@@ -228,19 +235,20 @@ func (c *GitHubCrawler) GetOrgMembers(org string) (users []entities.User, err er
 		users = append(users, c.formatUser(user))
 	}
 	page := 0
-	search_results, _, err := c.client.Search.Users(context.Background(), org, &github.SearchOptions{
+	searchResults, _, err := c.client.Search.Users(context.Background(), org, &github.SearchOptions{
 		ListOptions: github.ListOptions{Page: page, PerPage: 100}, //max per page is 100 - max pages is 10 - max Results is 1000 -.-
 	})
 	if err != nil {
 		log.Fatal("Error: ", err)
 		return users, nil
 	}
-	for _, user := range search_results.Users {
+	for _, user := range searchResults.Users {
 		users = append(users, c.formatUser(&user))
 	}
 	return users, nil
 }
 
+// GetRepoContributors Fetches a list of Users contributing to a given repository belonging to a given username
 func (c *GitHubCrawler) GetRepoContributors(user, repo string) (users []entities.User, err error) {
 	page := 1
 	// Get all commits
@@ -261,16 +269,4 @@ func (c *GitHubCrawler) GetRepoContributors(user, repo string) (users []entities
 		users = append(users, c.formatContributor(user))
 	}
 	return users, err
-}
-
-func (c *GitHubCrawler) GetUsersOrganizations(user string) {
-	//TODO
-}
-
-func (c *GitHubCrawler) DeepCrawlUser(user string) {
-	//TODO
-}
-
-func (c *GitHubCrawler) DeepCrawlOrganization(organization string) {
-	//TODO
 }

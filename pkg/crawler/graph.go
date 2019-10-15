@@ -11,8 +11,8 @@ import (
 
 // ItemGraph - Graph used to correlate repositories and users throughout the crawling
 type ItemGraph struct {
-	Nodes []*Node          `json:"nodes"`
-	Edges map[Node][]*Node `json:"edges"`
+	Nodes []Node          `json:"nodes"`
+	Edges map[Node][]Node `json:"edges"`
 	lock  sync.RWMutex
 }
 
@@ -23,7 +23,7 @@ type Node struct {
 }
 
 // String returns Node in str format
-func (n *Node) String() string {
+func (n Node) String() string {
 	return n.GetName()
 }
 
@@ -72,7 +72,7 @@ func (g *ItemGraph) AddRepositoryToUser(repo entities.Repository, user entities.
 // AddNode adds node to the Graph
 func (g *ItemGraph) AddNode(n *Node) {
 	g.lock.Lock()
-	g.Nodes = append(g.Nodes, n)
+	g.Nodes = append(g.Nodes, *n)
 	g.lock.Unlock()
 }
 
@@ -80,10 +80,10 @@ func (g *ItemGraph) AddNode(n *Node) {
 func (g *ItemGraph) AddEdge(n1, n2 *Node) {
 	g.lock.Lock()
 	if g.Edges == nil {
-		g.Edges = make(map[Node][]*Node)
+		g.Edges = make(map[Node][]Node)
 	}
-	g.Edges[*n1] = append(g.Edges[*n1], n2)
-	g.Edges[*n2] = append(g.Edges[*n2], n1)
+	g.Edges[*n1] = append(g.Edges[*n1], *n2)
+	g.Edges[*n2] = append(g.Edges[*n2], *n1)
 	g.lock.Unlock()
 }
 
@@ -93,7 +93,7 @@ func (g *ItemGraph) String() {
 	s := ""
 	for i := 0; i < len(g.Nodes); i++ {
 		s += g.Nodes[i].String() + " -> "
-		near := g.Edges[*g.Nodes[i]]
+		near := g.Edges[g.Nodes[i]]
 		for j := 0; j < len(near); j++ {
 			s += near[j].String() + " "
 		}

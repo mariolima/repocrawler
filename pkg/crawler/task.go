@@ -7,15 +7,21 @@ import (
 
 // Task used to deepcrawl a set of Users/Git urls
 type Task struct {
-	respChan      chan Match
-	AnalysedRepos []entities.Repository
-	AnalysedUsers []entities.User
-	Graph         ItemGraph
+	respChan chan Match
+	Graph    ItemGraph
+	State    TaskState
 	*crawler
 }
 
-func (c *crawler) NewTask(respChan chan Match, root string) Task {
-	t := Task{
+// TaskState contains data defining current Task state
+type TaskState struct {
+	AnalysedRepos []entities.Repository
+	AnalysedUsers []entities.User
+	Crawling      []entities.Repository
+}
+
+func (c *crawler) NewTask(respChan chan Match, root string) *Task {
+	t := &Task{
 		respChan: respChan,
 		crawler:  c,
 	}
@@ -32,6 +38,8 @@ func (ct *Task) TaskDone() {
 func (ct *Task) AddRepo(repo entities.Repository) {
 	ct.reposChan <- repo
 	ct.reposWg.Add(1)
+	ct.State.Crawling = append(ct.State.Crawling, repo)
+	ct.PushState() //Broadcast the state change
 	log.Warn("Crawling ", repo.Name)
 }
 
@@ -45,14 +53,21 @@ func (ct *Task) AddUser(user entities.User) {
 // DoneRepo marks 'repo` as completed in the Task
 func (ct *Task) DoneRepo(repo entities.Repository) {
 	<-ct.reposChan
-	ct.AnalysedRepos = append(ct.AnalysedRepos, repo)
+	ct.State.AnalysedRepos = append(ct.State.AnalysedRepos, repo)
+	// Shitty way to remove repo from `Currently Crawling`
+	for i, r := range ct.State.Crawling {
+		if r == repo {
+			ct.State.Crawling = append(ct.State.Crawling[:i], ct.State.Crawling[i+1:]...)
+		}
+	}
+	ct.PushState() //Broadcast the state change
 	log.Warn("DONE Crawling ", repo.Name)
 }
 
 // DoneUser marks 'user` as completed in the Task
 func (ct *Task) DoneUser(user entities.User) {
 	<-ct.usersChan
-	ct.AnalysedUsers = append(ct.AnalysedUsers, user)
+	ct.State.AnalysedUsers = append(ct.State.AnalysedUsers, user)
 	log.Warn("DONE Crawling user ", user.Name)
 }
 

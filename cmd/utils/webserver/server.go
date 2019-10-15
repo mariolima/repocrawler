@@ -30,6 +30,18 @@ type matchData struct {
 	Match crawler.Match `json:"match,omitempty"`
 }
 
+// PushState Broadcasts given CrawlerState to all websocket clients
+func (ms MatchServer) PushState(state []crawler.TaskState) error {
+	mg := Message{
+		Event:   STATE,
+		Sender:  ms.Hostname,
+		Content: state,
+	}
+	val, err := json.Marshal(mg)
+	BroadcastData(val)
+	return err
+}
+
 // PushMatch Broadcasts given Match to all websocket clients
 func (ms MatchServer) PushMatch(match crawler.Match) error {
 	mg := Message{

@@ -10,15 +10,15 @@ import (
 )
 
 type Repository struct {
-	GitURL string `json:"giturl"`
-	Name   string `json:"name"`
-	User   User   `json:"user"`
+	GitURL string
+	Name   string
+	User   User
 }
 
 type User struct {
-	Name    string `json:"name"`
-	Company string `json:"company"`
-	UUID    string `json:"uuid"`
+	Name    string
+	Company string
+	UUID    string
 }
 
 type SearchResult struct {

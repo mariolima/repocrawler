@@ -25,6 +25,7 @@ import (
 type MatchServer interface {
 	Setup()
 	PushMatch(Match) error        //pushes
+	PushState([]TaskState) error  //pushes crawler state
 	PushLogEntry(log.Entry) error //pushes logrus log entry
 }
 
@@ -35,7 +36,7 @@ type crawler struct {
 	MatchRules   map[string]map[string]*regexp.Regexp
 	MatchServers []MatchServer
 	Opts         Opts
-	Tasks        []Task // Used to organize DeepCrawler tasks - this is where the Match chan gets stored
+	Tasks        []*Task // Used to organize DeepCrawler tasks - this is where the Match chan gets stored
 	workLimiters
 }
 
@@ -53,6 +54,22 @@ type Opts struct {
 	RulesFile     string `json:"rules_file,omitempty"`
 	SlackWebhook  string `json:"webhook,omitempty"`
 	NrThreads     int    `json:"nthreads,omitempty"`
+}
+
+func (c *crawler) CurrentlyCrawling() (repos []entities.Repository, err error) {
+	for _, t := range c.Tasks {
+		for _, r := range t.State.Crawling {
+			repos = append(repos, r)
+		}
+	}
+	return repos, err
+}
+
+func (c *crawler) State() (state []TaskState) {
+	for _, task := range c.Tasks {
+		state = append(state, task.State)
+	}
+	return state
 }
 
 // // CrawlNewRepo queues another repo onto the Crawler
@@ -112,6 +129,10 @@ func (x Logger) Levels() []log.Level {
 	return log.AllLevels[:len(log.AllLevels)-1] //Ignore Trace
 }
 
+func (c *crawler) MatchServerTick() {
+	//TODO
+}
+
 func (c *crawler) AddMatchServer(ms MatchServer) {
 	c.MatchServers = append(c.MatchServers, ms)
 	log.Warn("Starting MatchServer")
@@ -125,6 +146,13 @@ func (c *crawler) AddMatchServer(ms MatchServer) {
 func (c *crawler) PushMatch(match Match) {
 	for _, ms := range c.MatchServers {
 		ms.PushMatch(match)
+	}
+}
+
+func (c *crawler) PushState() {
+	// Publishes the current state of the crawler
+	for _, ms := range c.MatchServers {
+		ms.PushState(c.State())
 	}
 }
 

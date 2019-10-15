@@ -30,6 +30,7 @@ type Event string
 const (
 	DEBUG    Event = "debug" // DEBUG state
 	MATCH    Event = "match"
+	STATE    Event = "state"
 	WARNING  Event = "warning"
 	ANNOUNCE Event = "announcement"
 )

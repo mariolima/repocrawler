@@ -57,7 +57,11 @@ func (ct *Task) DoneRepo(repo entities.Repository) {
 	// Shitty way to remove repo from `Currently Crawling`
 	for i, r := range ct.State.Crawling {
 		if r == repo {
-			ct.State.Crawling = append(ct.State.Crawling[:i], ct.State.Crawling[i+1:]...)
+			if len(ct.State.Crawling) > 0 {
+				ct.State.Crawling = append(ct.State.Crawling[:i], ct.State.Crawling[i+1:]...)
+			} else {
+				ct.State.Crawling = nil
+			}
 		}
 	}
 	ct.PushState() //Broadcast the state change

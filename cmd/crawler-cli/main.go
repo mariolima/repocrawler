@@ -67,9 +67,9 @@ func main() {
 
 	if *cmdOpts.WebServer {
 		repoCrawler.AddMatchServer(&webserver.MatchServer{
-			Port:     8090,
-			Hostname: "localhost",
-			CertFile: "configs/certs/",
+			Port:     *cmdOpts.WebServerOpts.Port,
+			Hostname: *cmdOpts.WebServerOpts.Hostname,
+			CertFile: *cmdOpts.WebServerOpts.CertsFolder,
 		})
 	}
 

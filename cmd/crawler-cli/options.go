@@ -23,12 +23,21 @@ type Options struct {
 	SlackWebhook      *string `json:"-"`
 	NrThreads         *int    `json:"-"`
 	BitbucketCreds    *BitbucketCreds
+	WebServerOpts     *WebServer
 }
 
 // BitbucketCreds Used to pass Bitbucket credentials if needed
 type BitbucketCreds struct {
 	Username *string `json:"-"`
 	Password *string `json:"-"`
+}
+
+// WebServer - Options used to setup the Web MatchServer
+type WebServer struct {
+	Hostname    *string `json:"-"`
+	Port        *int    `json:"-"`
+	CertsFolder *string `json:"-"`
+	SSL         *bool   `json:"-"`
 }
 
 // ParseOptions Given Options struct, parses the CLI options and gives them default values
@@ -51,6 +60,13 @@ func ParseOptions() (Options, error) {
 	options.BitbucketCreds = &BitbucketCreds{
 		Username: flag.String("bitbucketusername", "", "Bitbucket Username"),
 		Password: flag.String("bitbucketpassword", "", "Bitbucket Password"),
+	}
+
+	options.WebServerOpts = &WebServer{
+		Hostname:    flag.String("h", "0.0.0.0", "Hostame used for Web MatchServer interface"),
+		CertsFolder: flag.String("certs", "configs/certs/", "Location path of the certificate files to be used in the Web MatchServer (.key and .crt)"),
+		Port:        flag.Int("p", 8090, "Port to be used for the Web Matchserver HTTP/WS connections"),
+		SSL:         flag.Bool("ssl", false, "Run Web Matchserver with SSL"),
 	}
 
 	flag.Parse()

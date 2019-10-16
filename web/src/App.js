@@ -6,7 +6,7 @@ import Matches from './matches/Matches.js'
 import Pulse from './crawl_info/pulse.js'
 
 // const URL = 'wss://repocrawler:8090/ws';
-const URL = 'ws://repocrawler:8090/ws';
+const URL = 'ws://127.0.0.1:8090/ws';
 class App extends Component {
   ws = new WebSocket(URL)
   status="disconnected"

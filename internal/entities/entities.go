@@ -28,7 +28,7 @@ type SearchResult struct {
 }
 
 func (sr SearchResult) String() string {
-	return fmt.Sprintf("FileURL: %s\nRepository:\n\tGitURL: %s\n\tName:%s\n\tUser:%s", sr.FileURL, sr.Repository.GitURL, sr.Repository.Name, sr.Repository.User)
+	return fmt.Sprintf("FileURL: %s\nRepository:\nGitURL: %s\nName:%s\nUser:%s", sr.FileURL, sr.Repository.GitURL, sr.Repository.Name, sr.Repository.User)
 }
 
 func (u User) GetName() string {

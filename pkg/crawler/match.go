@@ -1,7 +1,7 @@
 package crawler
 
 import (
-	"github.com/mariolima/repocrawl/internal/entities"
+	"github.com/mariolima/repocrawler/internal/entities"
 )
 
 // Match Secret found while crawling a repository

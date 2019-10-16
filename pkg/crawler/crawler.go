@@ -3,10 +3,10 @@ package crawler
 import (
 	"sync"
 
-	"github.com/mariolima/repocrawl/internal/entities"
-	"github.com/mariolima/repocrawl/pkg/bitbucket"
-	"github.com/mariolima/repocrawl/pkg/github"
-	_ "github.com/mariolima/repocrawl/pkg/gitlab" //TODO
+	"github.com/mariolima/repocrawler/internal/entities"
+	"github.com/mariolima/repocrawler/pkg/bitbucket"
+	"github.com/mariolima/repocrawler/pkg/github"
+	_ "github.com/mariolima/repocrawler/pkg/gitlab" //TODO
 
 	"bufio"
 	"regexp"

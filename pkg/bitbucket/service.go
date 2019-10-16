@@ -3,7 +3,7 @@ package bitbucket
 import (
 	log "github.com/sirupsen/logrus"
 
-	"github.com/mariolima/repocrawl/internal/entities" //structs common in GitHub/GitLab/BitBucket - RepoData/UserData etc
+	"github.com/mariolima/repocrawler/internal/entities" //structs common in GitHub/GitLab/BitBucket - RepoData/UserData etc
 
 	"github.com/bndr/gopencils"
 

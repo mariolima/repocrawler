@@ -1,4 +1,4 @@
-# RepoCrawl
+# RepoCrawler
 Crawl GitHub/Bitbucket/Gitlab/Git repositories in search for unsafely stored secrets. Completely written in Go
 
 ## Overview
@@ -42,8 +42,8 @@ This tool crawls repositories on various Git services using a variety of methods
 ## Instalation
 ### From source
 ```sht
-go get github.com/mariolima/repocrawl
-cd ~/go/src/github.com/mariolima/repocrawl/cmd/crawler-cli
+go get github.com/mariolima/repocrawler
+cd ~/go/src/github.com/mariolima/repocrawler/cmd/crawler-cli
 go build .
 export LOG_LEVEL=info
 export GITHUB_ACCESS_TOKEN=TOKEN
@@ -51,10 +51,10 @@ export GITHUB_ACCESS_TOKEN=TOKEN
 ```
 ### Using Docker
 ```sh
-git clone github.com/mariolima/repocrawl
-cd repocrawl
-docker build . -t repocrawl
-docker run -it -e 'GITHUB_ACCESS_TOKEN=TOKEN' -e 'SLACK_WEBHOOK=YOURWEBHOOK' repocrawl -h
+git clone github.com/mariolima/repocrawler
+cd repocrawler
+docker build . -t repocrawler
+docker run -it -e 'GITHUB_ACCESS_TOKEN=TOKEN' -e 'SLACK_WEBHOOK=YOURWEBHOOK' repocrawler -h
 ```
 
 

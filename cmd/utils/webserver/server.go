@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mariolima/repocrawl/pkg/crawler"
+	"github.com/mariolima/repocrawler/pkg/crawler"
 	log "github.com/sirupsen/logrus"
 )
 

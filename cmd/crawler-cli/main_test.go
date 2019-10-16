@@ -10,9 +10,9 @@ import (
 
 	"fmt"
 
-	"github.com/mariolima/repocrawl/cmd/utils" // used to Highlight matches with colors
-	"github.com/mariolima/repocrawl/cmd/utils/webserver"
-	"github.com/mariolima/repocrawl/pkg/crawler"
+	"github.com/mariolima/repocrawler/cmd/utils" // used to Highlight matches with colors
+	"github.com/mariolima/repocrawler/cmd/utils/webserver"
+	"github.com/mariolima/repocrawler/pkg/crawler"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/mariolima/repocrawl/internal/entities"
+	"github.com/mariolima/repocrawler/internal/entities"
 	_ "github.com/twmb/algoimpl/go/graph" // Graph library /w most of Algos and Structs
 )
 

@@ -2,7 +2,8 @@ package crawler
 
 import (
 	"fmt"
-	"github.com/mariolima/repocrawl/cmd/utils"
+
+	"github.com/mariolima/repocrawler/cmd/utils"
 	// log "github.com/sirupsen/logrus"
 )
 

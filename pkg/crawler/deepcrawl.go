@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mariolima/repocrawl/internal/entities"
+	"github.com/mariolima/repocrawler/internal/entities"
 	_ "gopkg.in/src-d/go-billy.v4/memfs" //???????????????????
 	"gopkg.in/src-d/go-git.v4"           //It's def heavy but gets the job done - any alternatives for commit crawling?
 	"gopkg.in/src-d/go-git.v4/plumbing/object"

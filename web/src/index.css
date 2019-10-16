@@ -1,0 +1,67 @@
+@import url(https://fonts.googleapis.com/css?family=Anonymous+Pro:400,400i,700,700i&display=swap);
+  
+    body {
+      color: #DDDDDD;
+      /* color: #c5c8c6; */
+      background-color: #171616;
+      /*background-color: black;*/
+      font-family:"TopazPlus", "Lucida Console", monospace, Monaco;
+	    font-size: small;
+    }
+
+    a {
+      color: #DDDDDD;
+      text-decoration: none;
+    }
+    ik {
+      color: #74ee15;
+    }
+    y {
+      color: #f0c674;
+    }
+    gr {
+      color: #717171;
+    }
+    r {
+      color: #9e0034;
+    }
+    w {
+      color: #ffffff;
+    }
+    pink {
+      color: #f4b6e5;
+    }
+    bb {
+      color: #5cc2ca; /* baby blue */
+    }
+    purp {
+      color: #7a80a2;
+    }
+    l {
+      color: #c5c8c6;
+    }
+    lg {
+      color: #9de9a9;
+    }
+    sea {
+      color: #93ff4c;
+    }
+
+[class*="col-"] {
+  float: left;
+}
+
+.col-1{
+  width: 60%;
+}
+
+.box-grey {
+	font-size: small;
+
+  font-family:"Anonymous Pro";
+  background-color: #202022;
+  padding: 0.1em;
+  padding-left: 1em;
+  padding-bottom: 1em;
+  box-shadow: 0px 0px 0px 1px #565555;
+}

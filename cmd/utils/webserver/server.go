@@ -21,7 +21,13 @@ type MatchServer struct {
 func (ms MatchServer) Setup() {
 	go Start()
 	http.HandleFunc("/ws", WsPage)
-	panic(http.ListenAndServeTLS(fmt.Sprintf("%s:%d", ms.Hostname, ms.Port), "../../configs/certs/server.crt", "../../configs/certs/server.key", nil))
+	// panic(http.ListenAndServeTLS(fmt.Sprintf("%s:%d", ms.Hostname, ms.Port), "../../configs/certs/server.crt", "../../configs/certs/server.key", nil))
+	// staticHandler := http.StripPrefix("/static/", http.FileServer(http.Dir("../../web/build/static")))
+	// router.PathPrefix("/static/").Handler(staticHandler)
+	// http.Handle("/static", staticHandler)
+	http.Handle("/", http.FileServer(http.Dir("../../web/build")))
+	log.Warnf("Started UI client in http://%s:%d/\n", ms.Hostname, ms.Port)
+	panic(http.ListenAndServe(fmt.Sprintf("%s:%d", ms.Hostname, ms.Port), nil))
 	// TODO error handling
 }
 

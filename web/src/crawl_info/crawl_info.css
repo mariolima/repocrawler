@@ -1,0 +1,23 @@
+.CrawlInfo{
+  font-size: small;
+
+  font-family:"Anonymous Pro";
+  background-color: #202022;
+  padding: 1em;
+  margin-top: 1em;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: stretch;
+  box-shadow: 0px 0px 0px 1px #565555;
+}
+
+h1{
+  color: #9e0034;
+}
+
+
+verticalLine {
+  border-left: thin solid #565555;
+  margin-left: 1em;
+  margin-right: 1em;
+}

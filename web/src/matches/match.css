@@ -1,0 +1,26 @@
+.match_value{
+  color: #e43252;
+  background-color: black;
+}
+
+.match_value:hover{
+  color: black;
+  cursor: pointer;
+  background-color: #e43252;
+}
+
+.match_type_critical{
+  color: #e43252;
+  background-color: black;
+}
+
+.match_type_*{
+  background-color: black;
+}
+
+.Match{
+  padding: 0.1em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family:"Anonymous Pro";
+}

@@ -3,7 +3,7 @@ import './crawl_info.css'
 import FlexView from 'react-flexview';
 // import LineChart from './line_chart.js';
 import FilterButton from './filter_button.js';
-import {ForceGraph, ForceGraphNode, ForceGraphLink} from 'react-vis-force';
+import {InteractiveForceGraph, ForceGraphNode, ForceGraphLink} from 'react-vis-force';
 
 class Pulse extends Component {
 
@@ -66,18 +66,32 @@ class Pulse extends Component {
             } 
           </div>
           <verticalLine/>
-          <ForceGraph simulationOptions={{ height: 100, width: 300 }}>
-            {crawlstate && crawlstate.length>0 && crawlstate[0].AnalysedRepos && crawlstate[0].AnalysedRepos[0] ?
-              crawlstate.map((task, index) =>
-                <ForceGraphNode node={{ id: "org" }} fill="blue" />,
-                task.AnalysedRepos.map((repo, index) => {
-                    <ForceGraphNode node={{ id: repo.Name }} fill="red" />,
-                    <ForceGraphLink link={{ source: repo.Name, target: "org" }} />
-                }
+          <InteractiveForceGraph
+            simulationOptions={{ height: 70, width: 300, minScale: 0.25, maxScale: 5, animate:true,strength: { collide: 1, } }}
+            labelAttr="label"
+            onSelectNode={(node) => console.log(node)}
+            highlightDependencies
+          >
+            <ForceGraphNode node={{ id: 'org', label:'root',radius: 10 }} fill='#9e0034' />
+            {crawlstate && crawlstate.length>0 && crawlstate[0].AnalysedRepos && crawlstate[0].AnalysedRepos[0] ? (
+                crawlstate.map((task, index) => 
+                  task.AnalysedRepos.map((repo, index) => 
+                      <ForceGraphNode node={{ id: repo.Name , label: repo.Name}} fill='red' />
+                  )
                 )
-              ) : <ForceGraphNode node={{ id: 'first-node' }} fill="red" />
-            } 
-          </ForceGraph>
+              )
+             : <ForceGraphNode node={{ id: 'empty' }} fill='blue' />
+            }
+            {crawlstate && crawlstate.length>0 && crawlstate[0].AnalysedRepos && crawlstate[0].AnalysedRepos[0] ? (
+                crawlstate.map((task, index) => 
+                  task.AnalysedRepos.map((repo, index) => 
+                      <ForceGraphLink link={{ source: repo.Name, target: 'org' }} />
+                  )
+                )
+              )
+             : <ForceGraphNode node={{ id: 'empty2' }} fill='blue' />
+            }
+          </InteractiveForceGraph>
         </FlexView>
       </div>
       </div>

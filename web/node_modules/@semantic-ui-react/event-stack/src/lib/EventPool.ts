@@ -45,8 +45,15 @@ export default class EventPool {
     }
   }
 
-  public hasHandlers(): boolean {
-    return this.handlerSets.size > 0
+  public hasHandlers(eventType?: String): boolean {
+    if (!eventType) {
+      return this.handlerSets.size > 0
+    }
+    const eventSet = this.handlerSets.get(eventType);
+    if (eventSet) {
+      return eventSet.hasHandlers();
+    }
+    return false;
   }
 
   public removeHandlers(eventType: String, eventHandlers: EventListeners): EventPool {

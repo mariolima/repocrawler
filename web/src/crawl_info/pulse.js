@@ -3,6 +3,7 @@ import './crawl_info.css'
 import FlexView from 'react-flexview';
 // import LineChart from './line_chart.js';
 import FilterButton from './filter_button.js';
+import {ForceGraph, ForceGraphNode, ForceGraphLink} from 'react-vis-force';
 
 class Pulse extends Component {
 
@@ -35,6 +36,7 @@ class Pulse extends Component {
     // testing 
 
     return(
+      <div>
       <div className="CrawlInfo">
       <FlexView grow={1} shrink={4}>
           <div>
@@ -53,17 +55,31 @@ class Pulse extends Component {
           </div>
           <verticalLine/>
           <div>
-          {crawlstate && crawlstate.length>0 && crawlstate[0].Crawling && crawlstate[0].Crawling[0] ?
-            crawlstate.map((task, index) =>
-               task.Crawling.map((repo, index) =>
-                  <div>{repo.Name}</div>
-               )
-            )
-            :
-              "[repo list]"
-          } 
+            {crawlstate && crawlstate.length>0 && crawlstate[0].Crawling && crawlstate[0].Crawling[0] ?
+              crawlstate.map((task, index) =>
+                task.Crawling.map((repo, index) =>
+                    <div>{repo.Name}</div>
+                )
+              )
+              :
+                "[repo list]"
+            } 
           </div>
-          </FlexView>
+          <verticalLine/>
+          <ForceGraph simulationOptions={{ height: 100, width: 300 }}>
+            {crawlstate && crawlstate.length>0 && crawlstate[0].AnalysedRepos && crawlstate[0].AnalysedRepos[0] ?
+              crawlstate.map((task, index) =>
+                <ForceGraphNode node={{ id: "org" }} fill="blue" />,
+                task.AnalysedRepos.map((repo, index) => {
+                    <ForceGraphNode node={{ id: repo.Name }} fill="red" />,
+                    <ForceGraphLink link={{ source: repo.Name, target: "org" }} />
+                }
+                )
+              ) : <ForceGraphNode node={{ id: 'first-node' }} fill="red" />
+            } 
+          </ForceGraph>
+        </FlexView>
+      </div>
       </div>
     )
 /*     return(

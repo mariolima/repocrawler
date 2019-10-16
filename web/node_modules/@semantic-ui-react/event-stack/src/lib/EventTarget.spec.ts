@@ -60,6 +60,20 @@ describe('EventTarget', () => {
       expect(handler2).toHaveBeenCalledTimes(1)
     })
 
+    it('removes handlers when the pool has multiple eventTypes', () => {
+      const handler1 = jasmine.createSpy()
+      const handler2 = jasmine.createSpy()
+
+      eventTarget.addHandlers('default', 'click', [handler1])
+      eventTarget.addHandlers('default', 'keydown', [handler2])
+      expect(eventTarget.hasHandlers()).toBeTruthy();
+
+      eventTarget.removeHandlers('default', 'click', [handler1])
+      eventTarget.removeHandlers('default', 'keydown', [handler2])
+
+      expect(eventTarget.hasHandlers()).toBeFalsy();
+    })
+
     it('removes handlers with multiple pools', () => {
       const handler1 = jasmine.createSpy()
       const handler2 = jasmine.createSpy()

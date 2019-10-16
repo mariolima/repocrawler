@@ -42,7 +42,9 @@ export default class EventTarget {
       this.pools.delete(poolName)
     }
 
-    if (this.pools.size === 0) {
+    let hasHandlers = false;
+    this.pools.forEach(pool => hasHandlers = hasHandlers || pool.hasHandlers(eventType))
+    if (!hasHandlers) {
       this.removeTargetHandler(eventType)
     }
   }

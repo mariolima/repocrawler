@@ -57,7 +57,19 @@ describe('EventPool', () => {
       expect(pool.hasHandlers()).toBeTruthy()
     })
 
-    it('returns "false" if has not handlers', () => {
+    it('returns "true" if eventType has handlers', () => {
+      const pool = EventPool.createByType('default', 'click', [() => {}])
+
+      expect(pool.hasHandlers('click')).toBeTruthy()
+    })
+
+    it('returns "false" if eventType has no handlers', () => {
+      const pool = EventPool.createByType('default', 'click', [() => {}])
+
+      expect(pool.hasHandlers('keydown')).toBeFalsy()
+    })
+
+    it('returns "false" if has no handlers', () => {
       const pool = new EventPool('default', new Map())
 
       expect(pool.hasHandlers()).toBeFalsy()

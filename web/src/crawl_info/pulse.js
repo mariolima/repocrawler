@@ -67,7 +67,7 @@ class Pulse extends Component {
           </div>
           <verticalLine/>
           <InteractiveForceGraph
-            simulationOptions={{ height: 70, width: 300, minScale: 0.25, maxScale: 5, animate:true,strength: { collide: 1, } }}
+            simulationOptions={{ height: 100, width: 300, minScale: 0.25, maxScale: 5, animate:true,strength: { collide: 10, } }}
             labelAttr="label"
             onSelectNode={(node) => console.log(node)}
             highlightDependencies

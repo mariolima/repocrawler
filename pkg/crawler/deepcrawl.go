@@ -10,15 +10,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport/client"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/mariolima/repocrawler/internal/entities"
-	_ "gopkg.in/src-d/go-billy.v4/memfs" //???????????????????
-	"gopkg.in/src-d/go-git.v4"           //It's def heavy but gets the job done - any alternatives for commit crawling?
-	"gopkg.in/src-d/go-git.v4/plumbing/object"
-	"gopkg.in/src-d/go-git.v4/plumbing/transport/client"
-	_ "gopkg.in/src-d/go-git.v4/storage/memory" //Used to clone into memory - not used rn
+
+	// githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 
 	log "github.com/sirupsen/logrus"
-	githttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	// "os"
 )
 

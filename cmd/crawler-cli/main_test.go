@@ -46,7 +46,7 @@ func TestMain(t *testing.T) {
 
 	repoCrawler.AddMatchServer(&webserver.MatchServer{
 		Port:     8090,
-		Hostname: "gobh",
+		Hostname: "me",
 		CertFile: "configs/certs/",
 	})
 

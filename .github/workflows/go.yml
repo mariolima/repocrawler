@@ -23,3 +23,9 @@ jobs:
 
     - name: Test
       run: cd cmd/crawler-cli; go test -v ./...
+    
+    - name: Setup yarn
+      uses: actions/setup-node@v2
+      
+    - name: Build web
+      run: cd web; yarn build

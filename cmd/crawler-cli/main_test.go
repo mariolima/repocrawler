@@ -44,11 +44,11 @@ func TestMain(t *testing.T) {
 		return
 	}
 
-	repoCrawler.AddMatchServer(&webserver.MatchServer{
-		Port:     8090,
-		Hostname: "me",
-		CertFile: "configs/certs/",
-	})
+	// repoCrawler.AddMatchServer(&webserver.MatchServer{
+	// 	Port:     8090,
+	// 	Hostname: "localhost",
+	// 	CertFile: "configs/certs/",
+	// })
 
 	// Channel for Matches found
 	matches := make(chan crawler.Match)
